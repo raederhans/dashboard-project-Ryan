@@ -1,6 +1,12 @@
 Dashboards are the bread and butter of spatial data displays. They are highly interactive websites, usually with real-time updates that show data in an accessible way.
 
 
+## Examples
+
+- School Explorer (in-class example), [examples/school-explorer-for-parents](examples/school-explorer-for-parents/site/)
+- Philly Park Lead Levels, [examples/philly-park-lead-levels](examples/philly-park-lead-levels/)
+
+
 ## Instructions
 
 ### Step 1: Choose a topic
