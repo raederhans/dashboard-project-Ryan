@@ -21,3 +21,7 @@
 [2m20:01:23[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33m@turf/turf[32m[39m
 [2m20:01:23[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
 [2m20:01:36[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/main.js[22m
+[2m20:30:56[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/api/boundaries.js[22m
+[2m20:31:16[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/utils/http.js[22m
+[2m20:31:31[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/api/crime.js[22m
+[2m20:32:02[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/map/tracts_view.js[22m

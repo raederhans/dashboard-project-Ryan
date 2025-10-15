@@ -4,7 +4,7 @@
 
 ## In Progress
 
- ## Completed
+ - [x] V1.2: Z-cache: http client caching + tract counts precompute (owner: codex) - HTTP layer adds LRU+session cache, in-flight dedupe, backoff + logs; tract counts script outputs src/data/tract_counts_last12m.json.
  - [x] Bootstrap Vite + deps (maplibre, turf, dayjs) and base folders (ID: A-boot) (owner: codex) - Vite scaffold & deps OK; smoke log: logs/npm_run_dev_*.out.log; 2 moderate dev-only vulnerabilities.
  - [x] Create API layer stubs in src/api/* with signatures from plan (ID: B-api) (owner: codex) - files created: src/config.js, src/utils/{http,sql}.js, src/api/{crime,boundaries,acs}.js, src/state/store.js.
  - [x] Implement SQL builders for endpoints Sec 2.1-2.6 (ID: B-sql) (owner: codex) - SQL builders implemented in src/utils/sql.js.
@@ -23,4 +23,5 @@
 
 ## Blocked
 *(codex writes reason + suggestion)*
+
 

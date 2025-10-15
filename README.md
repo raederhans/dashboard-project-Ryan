@@ -61,3 +61,11 @@ Add a readme for your dashboard here. Include content overview, data citations, 
 - The "Tracts" admin level uses cached tracts geometry and ACS 2023 tract stats.
 - Per‑10k rates are computed as (value / population) * 10,000 when population data is available.
 - Tracts with population < 500 are masked from the choropleth to avoid unstable rates.
+
+## Precompute tract counts
+
+- To speed up tracts choropleths for longer windows, you can precompute last‑12‑months crime counts per tract:
+  - Run: `node scripts/precompute_tract_counts.mjs`
+  - Output JSON: `src/data/tract_counts_last12m.json`
+  - Logs: `logs/precompute_tract_counts_*.log`
+- Data freshness: re‑run the script periodically to refresh counts. The app will use the precomputed file when present, and fall back to live computations otherwise.

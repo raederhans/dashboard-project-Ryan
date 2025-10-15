@@ -1,5 +1,5 @@
 import { CARTO_SQL_BASE } from "../config.js";
-import { fetchJson } from "../utils/http.js";
+import { fetchJson, logQuery } from "../utils/http.js";
 import * as Q from "../utils/sql.js";
 
 /**
@@ -13,8 +13,13 @@ import * as Q from "../utils/sql.js";
  */
 export async function fetchPoints({ start, end, types, bbox }) {
   const sql = Q.buildCrimePointsSQL({ start, end, types, bbox });
-  const url = `${CARTO_SQL_BASE}?format=GeoJSON&q=${encodeURIComponent(sql)}`;
-  return fetchJson(url);
+  await logQuery('fetchPoints', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `format=GeoJSON&q=${encodeURIComponent(sql)}`,
+    cacheTTL: 30_000,
+  });
 }
 
 /**
@@ -27,8 +32,13 @@ export async function fetchPoints({ start, end, types, bbox }) {
  */
 export async function fetchMonthlySeriesCity({ start, end, types }) {
   const sql = Q.buildMonthlyCitySQL({ start, end, types });
-  const url = `${CARTO_SQL_BASE}?q=${encodeURIComponent(sql)}`;
-  return fetchJson(url);
+  await logQuery('fetchMonthlySeriesCity', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 300_000,
+  });
 }
 
 /**
@@ -55,8 +65,13 @@ export async function fetchMonthlySeriesBuffer({
     center3857,
     radiusM,
   });
-  const url = `${CARTO_SQL_BASE}?q=${encodeURIComponent(sql)}`;
-  return fetchJson(url);
+  await logQuery('fetchMonthlySeriesBuffer', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 60_000,
+  });
 }
 
 /**
@@ -83,8 +98,13 @@ export async function fetchTopTypesBuffer({
     radiusM,
     limit,
   });
-  const url = `${CARTO_SQL_BASE}?q=${encodeURIComponent(sql)}`;
-  return fetchJson(url);
+  await logQuery('fetchTopTypesBuffer', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 60_000,
+  });
 }
 
 /**
@@ -111,8 +131,13 @@ export async function fetch7x24Buffer({
     center3857,
     radiusM,
   });
-  const url = `${CARTO_SQL_BASE}?q=${encodeURIComponent(sql)}`;
-  return fetchJson(url);
+  await logQuery('fetch7x24Buffer', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 60_000,
+  });
 }
 
 /**
@@ -125,8 +150,13 @@ export async function fetch7x24Buffer({
  */
 export async function fetchByDistrict({ start, end, types }) {
   const sql = Q.buildByDistrictSQL({ start, end, types });
-  const url = `${CARTO_SQL_BASE}?q=${encodeURIComponent(sql)}`;
-  return fetchJson(url);
+  await logQuery('fetchByDistrict', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 120_000,
+  });
 }
 
 /**
@@ -136,8 +166,13 @@ export async function fetchByDistrict({ start, end, types }) {
  */
 export async function fetchCountBuffer({ start, end, types, center3857, radiusM }) {
   const sql = Q.buildCountBufferSQL({ start, end, types, center3857, radiusM });
-  const url = `${CARTO_SQL_BASE}?q=${encodeURIComponent(sql)}`;
-  const json = await fetchJson(url);
+  await logQuery('fetchCountBuffer', sql);
+  const json = await fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 30_000,
+  });
   const rows = json?.rows;
   const n = Array.isArray(rows) && rows.length > 0 ? Number(rows[0]?.n) || 0 : 0;
   return n;
