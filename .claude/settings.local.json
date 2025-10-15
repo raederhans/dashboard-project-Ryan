@@ -13,7 +13,11 @@
       "Bash(Start-Sleep -Seconds 8)",
       "Bash($ts = Get-Date -Format \"yyyyMMdd_HHmmss\")",
       "Bash(Invoke-WebRequest -Uri \"http://localhost:5173/\" -OutFile \"logs/diag_compare_http_$ts.log\" -TimeoutSec 5)",
-      "Bash(Out-String)"
+      "Bash(Out-String)",
+      "Bash(cmd /c \"dir logs\\*.log /O-D /B\")",
+      "Bash(awk:*)",
+      "Bash(echo $ts)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

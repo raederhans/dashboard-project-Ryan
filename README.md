@@ -1,11 +1,63 @@
-Add a readme for your dashboard here. Include content overview, data citations, and any relevant technical details.
+# Philadelphia Crime Dashboard
 
-## How to Run
+An interactive web dashboard for exploring crime incidents in Philadelphia using MapLibre GL, Chart.js, and the City of Philadelphia's open data APIs.
 
-- dev: `npm run dev` (default http://localhost:5173/)
-- build: `npm run build`
-- preview: `npm run preview`
-- note: see logs/npm_run_dev_*.log for prior smoke test output
+## How to Use the Dashboard
+
+### Setting Your Area of Interest (Buffer A)
+1. Click **"Select on Map"** button to enter selection mode
+2. Click anywhere on the map to set your buffer center (marker A will appear)
+3. Choose a **radius** (400m, 800m, 1.6km, or 3.2km) to define your area
+4. An orange circle shows your selected buffer zone
+
+### Time Window Controls
+- **Quick Presets:** Click "Last 3mo", "Last 6mo", or "Last 12mo" for recent data
+- **Custom Range:** Use the start month picker + duration dropdown to query historical windows (e.g., Jan 2023 - Jun 2023)
+
+### Filtering by Crime Type
+- **Offense Groups:** Select broad categories (Property, Violent, Vehicle, etc.) from the multi-select
+- **Drilldown:** After selecting groups, the fine-grained codes dropdown populates with specific offense types (e.g., "THEFT", "RETAIL THEFT")
+- Choose specific codes to narrow your analysis further
+
+### Map Layers & Visualization
+- **Admin Level Toggle:** Switch between **Police Districts** and **Census Tracts** views
+- **Display Mode:** Toggle between raw **counts** and **per-10k population** rates
+- **Click districts/tracts** for detailed popup stats (total incidents, per-10k rate, 30-day trends, top-3 offense types)
+- **Hover** over any polygon to see quick stats in the tooltip
+
+### Charts & Compare Card
+- **Monthly Series:** Line chart comparing your buffer (A) vs citywide trends
+- **Top Offenses:** Bar chart showing most frequent crime types in buffer A
+- **7x24 Heatmap:** Hour-of-day and day-of-week patterns
+- **Compare A Card:** Live summary with total incidents, per-10k rate, 30-day change, and top-3 offenses
+
+For detailed control semantics and technical specifications, see [docs/CONTROL_SPEC.md](docs/CONTROL_SPEC.md).
+
+## Quick Start (Dev vs Preview)
+
+> **⚠️ CRITICAL:** Do NOT open `index.html` directly in your browser. The app requires a bundler (Vite) to resolve ES modules and dependencies.
+
+> **📁 Vite Project Structure Rule:** In Vite projects, `index.html` MUST be in the **project root**, not in `public/`. The `public/` directory is for static assets (images, fonts) copied as-is. If you see build errors about "HTML proxy", verify `index.html` is at project root with script tags using absolute paths like `/src/main.js`.
+
+### Development Mode (Recommended)
+```bash
+npm install
+npm run dev
+```
+- Opens at `http://localhost:5173/`
+- Hot module replacement (instant updates on file save)
+- Full dev tools and error reporting
+
+### Production Preview
+```bash
+npm run build
+npm run preview
+```
+- Builds optimized bundle to `dist/`
+- Serves production build at `http://localhost:4173/`
+- Use this to test before deploying
+
+**Current Status (2025-10-15):** Build currently fails due to `vite.config.js` `root: 'public'` configuration. See [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for active blockers and [docs/DEPLOY.md](docs/DEPLOY.md) for detailed troubleshooting.
 
 ### Basemap & CSS
 
@@ -15,6 +67,15 @@ Add a readme for your dashboard here. Include content overview, data citations, 
 - Attribution: © OpenStreetMap contributors.
 
 ### Charts
+
+## How to Use the Dashboard
+
+- Use map selection: click “Select on map” then click the map to set the A center; press Esc or click the button again to cancel. A translucent circle shows the current buffer.
+- Radius: changes the buffer radius used by points, charts, and the compare card; the district choropleth is unaffected by radius.
+- Time window: pick a start month and duration (3/6/12/24). Presets “Last 6m/12m” help jump quickly.
+- Offense grouping & drilldown: pick one or more groups, then optionally drill down into specific codes (the list reflects live audited codes).
+- Admin level: switch between Districts and Tracts; per‑10k requires tracts + ACS.
+- Clusters: when too many points are present, clusters are shown with a prompt to zoom in.
 
 - Charts are implemented with Chart.js v4. Before running the app, install dependencies:
   `npm i`
@@ -69,3 +130,12 @@ Add a readme for your dashboard here. Include content overview, data citations, 
   - Output JSON: `src/data/tract_counts_last12m.json`
   - Logs: `logs/precompute_tract_counts_*.log`
 - Data freshness: re‑run the script periodically to refresh counts. The app will use the precomputed file when present, and fall back to live computations otherwise.
+
+## Technical Documentation
+
+- **Control Specifications:** [docs/CONTROL_SPEC.md](docs/CONTROL_SPEC.md) - Detailed state model, event flows, visual aids, and edge cases for all UI controls
+- **Fix Plan:** [docs/FIX_PLAN.md](docs/FIX_PLAN.md) - Root cause analysis and implementation steps for known UX/logic issues
+- **TODO:** [docs/TODO.md](docs/TODO.md) - Actionable task list with acceptance tests
+- **Deployment Guide:** [docs/DEPLOY.md](docs/DEPLOY.md) - Run modes (dev/preview), why raw file access fails, troubleshooting
+- **Known Issues:** [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) - Current blockers, performance issues, workarounds
+- **Changelog:** [docs/CHANGELOG.md](docs/CHANGELOG.md) - Feature history, implementation notes, diagnostic logs

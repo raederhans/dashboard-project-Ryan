@@ -225,6 +225,24 @@ export function buildByDistrictSQL({ start, end, types }) {
 }
 
 /**
+ * Top types for a given district code.
+ * @param {{start:string,end:string,types?:string[],dc_dist:string,limit?:number}} p
+ */
+export function buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit = 5 }) {
+  const startIso = dateFloorGuard(start);
+  const endIso = ensureIso(end, 'end');
+  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const dist = String(dc_dist).padStart(2, '0').replace(/'/g, "''");
+  clauses.push(`  AND dc_dist = '${dist}'`);
+  return [
+    'SELECT text_general_code, COUNT(*) AS n',
+    'FROM incidents_part1_part2',
+    ...clauses,
+    `GROUP BY 1 ORDER BY n DESC LIMIT ${ensurePositiveInt(limit,'limit')}`,
+  ].join('\n');
+}
+
+/**
  * Build SQL to count incidents within a buffer (no GROUP BY).
  * @param {object} params
  * @param {string} params.start

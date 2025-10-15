@@ -1,4 +1,4 @@
-import { expandGroupsToCodes } from '../utils/types.js';
+import { expandGroupsToCodes, getCodesForGroups } from '../utils/types.js';
 
 function debounce(fn, wait = 300) {
   let t;
@@ -16,12 +16,17 @@ function debounce(fn, wait = 300) {
 export function initPanel(store, handlers) {
   const addrA = document.getElementById('addrA');
   const useCenterBtn = document.getElementById('useCenterBtn');
+  const useMapHint = document.getElementById('useMapHint');
   const radiusSel = document.getElementById('radiusSel');
   const twSel = document.getElementById('twSel');
   const groupSel = document.getElementById('groupSel');
   const fineSel = document.getElementById('fineSel');
   const adminSel = document.getElementById('adminSel');
   const rateSel = document.getElementById('rateSel');
+  const startMonth = document.getElementById('startMonth');
+  const durationSel = document.getElementById('durationSel');
+  const preset6 = document.getElementById('preset6');
+  const preset12 = document.getElementById('preset12');
 
   const onChange = debounce(() => {
     // Derive selected offense codes from groups
@@ -35,22 +40,26 @@ export function initPanel(store, handlers) {
   });
 
   useCenterBtn?.addEventListener('click', () => {
-    try {
-      const c = handlers.getMapCenter?.();
-      if (c) {
-        store.setCenterFromLngLat(c.lng, c.lat);
-        if (addrA) addrA.value = `lng ${c.lng.toFixed(5)}, lat ${c.lat.toFixed(5)}`;
-        onChange();
-      }
-    } catch (e) {
-      // ignore
+    if (store.selectMode !== 'point') {
+      store.selectMode = 'point';
+      useCenterBtn.textContent = 'Cancel';
+      if (useMapHint) useMapHint.style.display = 'block';
+      document.body.style.cursor = 'crosshair';
+    } else {
+      store.selectMode = 'idle';
+      useCenterBtn.textContent = 'Select on map';
+      if (useMapHint) useMapHint.style.display = 'none';
+      document.body.style.cursor = '';
     }
   });
 
-  radiusSel?.addEventListener('change', () => {
+  const radiusImmediate = () => {
     store.radius = Number(radiusSel.value) || 400;
+    handlers.onRadiusInput?.(store.radius);
     onChange();
-  });
+  };
+  radiusSel?.addEventListener('change', radiusImmediate);
+  radiusSel?.addEventListener('input', radiusImmediate);
 
   twSel?.addEventListener('change', () => {
     store.timeWindowMonths = Number(twSel.value) || 6;
@@ -60,11 +69,21 @@ export function initPanel(store, handlers) {
   groupSel?.addEventListener('change', () => {
     const values = Array.from(groupSel.selectedOptions).map((o) => o.value);
     store.selectedGroups = values;
+    // populate drilldown options
+    if (fineSel) {
+      const codes = getCodesForGroups(values);
+      fineSel.innerHTML = '';
+      for (const c of codes) {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; fineSel.appendChild(opt);
+      }
+    }
     onChange();
   });
 
   fineSel?.addEventListener('change', () => {
-    // placeholder for fine-grained codes
+    const codes = Array.from(fineSel.selectedOptions).map((o) => o.value);
+    store.selectedTypes = codes; // override when present
     onChange();
   });
 
@@ -83,4 +102,11 @@ export function initPanel(store, handlers) {
   if (twSel) twSel.value = String(store.timeWindowMonths || 6);
   if (adminSel) adminSel.value = String(store.adminLevel || 'districts');
   if (rateSel) rateSel.value = store.per10k ? 'per10k' : 'counts';
+  if (startMonth && store.startMonth) startMonth.value = store.startMonth;
+  if (durationSel) durationSel.value = String(store.durationMonths || 6);
+
+  startMonth?.addEventListener('change', () => { store.startMonth = startMonth.value || null; onChange(); });
+  durationSel?.addEventListener('change', () => { store.durationMonths = Number(durationSel.value) || 6; onChange(); });
+  preset6?.addEventListener('click', () => { const d = new Date(); const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; store.startMonth = ym; store.durationMonths = 6; onChange(); });
+  preset12?.addEventListener('click', () => { const d = new Date(); const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; store.startMonth = ym; store.durationMonths = 12; onChange(); });
 }

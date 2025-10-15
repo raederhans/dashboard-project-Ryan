@@ -160,6 +160,17 @@ export async function fetchByDistrict({ start, end, types }) {
 }
 
 /**
+ * Top offense types within a district code.
+ */
+export async function fetchTopTypesByDistrict({ start, end, types, dc_dist, limit = 5 }) {
+  const sql = Q.buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit });
+  await logQuery('fetchTopTypesByDistrict', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 60_000,
+  });
+}
+
+/**
  * Count incidents within a buffer A for the given time window and optional types.
  * @param {{start:string,end:string,types?:string[],center3857:[number,number]|{x:number,y:number},radiusM:number}} params
  * @returns {Promise<number>} total count

@@ -11,6 +11,8 @@ import { store } from './state/store.js';
 import { initPanel } from './ui/panel.js';
 import { refreshPoints } from './map/points.js';
 import { updateCompare } from './compare/card.js';
+import { attachDistrictPopup } from './map/ui_popup_district.js';
+import * as turf from '@turf/turf';
 import { getTractsMerged } from './map/tracts_view.js';
 import { renderTractsChoropleth } from './map/render_choropleth_tracts.js';
 
@@ -35,6 +37,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       const { breaks, colors } = renderDistrictChoropleth(map, merged);
       drawLegend(breaks, colors, '#legend');
       attachHover(map, 'districts-fill');
+      attachDistrictPopup(map, 'districts-fill');
     });
   } catch (err) {
     console.warn('Choropleth demo failed:', err);
@@ -106,4 +109,45 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   initPanel(store, { onChange: refreshAll, getMapCenter: () => map.getCenter() });
+
+  // Selection mode: click to set A and update buffer circle
+  function updateBuffer() {
+    if (!store.centerLonLat) return;
+    const circle = turf.circle(store.centerLonLat, store.radius, { units: 'meters', steps: 64 });
+    const srcId = 'buffer-a';
+    if (map.getSource(srcId)) {
+      map.getSource(srcId).setData(circle);
+    } else {
+      map.addSource(srcId, { type: 'geojson', data: circle });
+      map.addLayer({ id: 'buffer-a-fill', type: 'fill', source: srcId, paint: { 'fill-color': '#38bdf8', 'fill-opacity': 0.15 } });
+      map.addLayer({ id: 'buffer-a-line', type: 'line', source: srcId, paint: { 'line-color': '#0284c7', 'line-width': 1.5 } });
+    }
+  }
+
+  map.on('click', (e) => {
+    if (store.selectMode === 'point') {
+      const lngLat = [e.lngLat.lng, e.lngLat.lat];
+      store.centerLonLat = lngLat;
+      store.setCenterFromLngLat(e.lngLat.lng, e.lngLat.lat);
+      // marker A
+      if (!window.__markerA && window.maplibregl && window.maplibregl.Marker) {
+        window.__markerA = new window.maplibregl.Marker({ color: '#ef4444' });
+      }
+      if (window.__markerA && window.__markerA.setLngLat) {
+        window.__markerA.setLngLat(e.lngLat).addTo(map);
+      }
+      upsertBufferA(map, { centerLonLat: store.centerLonLat, radiusM: store.radius });
+      store.selectMode = 'idle';
+      const btn = document.getElementById('useCenterBtn'); if (btn) btn.textContent = 'Select on map';
+      const hint = document.getElementById('useMapHint'); if (hint) hint.style.display = 'none';
+      document.body.style.cursor = '';
+      window.__dashboard = window.__dashboard || {}; window.__dashboard.lastPick = { when: new Date().toISOString(), lngLat };
+      refreshAll();
+    }
+  });
+
+  // react to radius changes
+  const radiusObserver = new MutationObserver(() => updateBuffer());
+  radiusObserver.observe(document.documentElement, { attributes: false, childList: false, subtree: false });
 });
+

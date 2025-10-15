@@ -41,32 +41,7 @@ export function categoryColorPairs() {
 }
 
 // Offense groups for controls
-export const offenseGroups = {
-  property: [
-    'THEFT',
-    'RETAIL THEFT',
-    'THEFT FROM BUILDING',
-  ],
-  vehicle: [
-    'MOTOR VEHICLE THEFT',
-    'THEFT FROM VEHICLE',
-  ],
-  burglary: [
-    'BURGLARY',
-    'BURGLARY RESIDENTIAL',
-    'BURGLARY COMMERCIAL',
-  ],
-  robbery_gun: [
-    'ROBBERY FIREARM',
-  ],
-  assault_gun: [
-    'AGGRAVATED ASSAULT FIREARM',
-  ],
-  vandalism_other: [
-    'VANDALISM',
-    'CRIMINAL MISCHIEF',
-  ],
-};
+export const offenseGroups = groups;
 
 /**
  * Expand selected group keys into a flat list of text_general_code values.
@@ -76,9 +51,13 @@ export const offenseGroups = {
 export function expandGroupsToCodes(selectedGroups = []) {
   const out = [];
   for (const key of selectedGroups) {
-    const arr = offenseGroups[key];
+    const k = key.replace(/[- ]/g, '_');
+    const arr = offenseGroups[key] || offenseGroups[k] || offenseGroups[key?.toUpperCase?.()] || offenseGroups[key?.toLowerCase?.()];
     if (Array.isArray(arr)) out.push(...arr);
   }
   // de-duplicate
   return Array.from(new Set(out));
 }
+
+export function getCodesForGroups(groups) { return expandGroupsToCodes(groups); }
+import groups from '../data/offense_groups.json' assert { type: 'json' };

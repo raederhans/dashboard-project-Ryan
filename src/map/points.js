@@ -49,7 +49,7 @@ export async function refreshPoints(map, { start, end, types } = {}) {
   const sql = buildCrimePointsSQL({ start, end, types, bbox });
   const url = `${CARTO_SQL_BASE}?format=GeoJSON&q=${encodeURIComponent(sql)}`;
 
-  const geo = await fetchJson(url);
+  const geo = await fetchJson(url, { cacheTTL: 30_000 });
   const count = Array.isArray(geo?.features) ? geo.features.length : 0;
 
   // Add or update source
@@ -119,6 +119,11 @@ export async function refreshPoints(map, { start, end, types } = {}) {
     if (existsUnclustered) map.removeLayer(unclusteredId);
     ensureBanner('Zoom in to see individual incidents');
   } else {
+    if (count === 0) {
+      ensureBanner('No incidents for selected filters — try expanding time window or offense groups');
+      if (existsUnclustered) map.removeLayer(unclusteredId);
+      return;
+    }
     hideBanner();
     if (!existsUnclustered) {
       map.addLayer({
@@ -158,4 +163,3 @@ function hideBanner() {
   const el = document.getElementById('banner');
   if (el) el.style.display = 'none';
 }
-
