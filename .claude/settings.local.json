@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(codex exec \"continue to next task\" --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox)",
+      "Bash(powershell.exe:*)",
+      "Bash(dir:*)",
+      "Bash(if not exist logs mkdir logs)",
+      "Bash(test:*)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(Start-Sleep -Seconds 8)",
+      "Bash($ts = Get-Date -Format \"yyyyMMdd_HHmmss\")",
+      "Bash(Invoke-WebRequest -Uri \"http://localhost:5173/\" -OutFile \"logs/diag_compare_http_$ts.log\" -TimeoutSec 5)",
+      "Bash(Out-String)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

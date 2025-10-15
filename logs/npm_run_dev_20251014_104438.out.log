@@ -1,0 +1,2 @@
+Start attempt: npm run dev -- --host
+Result: Start-Process failed (PowerShell) before server boot. No dev server was kept running.
