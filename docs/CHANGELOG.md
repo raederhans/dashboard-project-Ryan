@@ -37,6 +37,27 @@ Re-validated the dashboard after initial blocker fixes were attempted. Found tha
 
 ---
 
+## 2025-10-15 16:04 — Static Repository Audit
+
+**Type:** Read-only structural analysis (no code execution, no source edits)
+
+### Deliverables
+- **[docs/STRUCTURE_AUDIT.md](STRUCTURE_AUDIT.md)** — Comprehensive audit report: Vite structure verdict (3 blockers), subsystem mapping (controls/maps/charts/API/SQL), risks table, data artifact validation, call paths
+- **[docs/FILE_MAP.md](FILE_MAP.md)** — Quick reference "What to Edit" index for common changes (offense groups, colors, TTLs, legends, SQL, controls, etc.)
+- **[docs/EDIT_POINTS.md](EDIT_POINTS.md)** — Step-by-step how-to guide with 12 example scenarios (add group, change colors, adjust cache, add popup field, etc.) — all patches are suggestions, not applied
+- **[logs/STATIC_AUDIT_20251015_160419.md](../logs/STATIC_AUDIT_20251015_160419.md)** — Raw audit notes: inventory, trees, grep results, JSON validation, orphan module checks
+
+### Key Findings
+- ✅ offense_groups.json valid (all arrays)
+- ✅ ACS tract data loaded (381 tracts)
+- ✅ SQL SRID consistent (EPSG:3857 throughout)
+- 🔴 3 BLOCKERS: Vite structure violated (`root: 'public'`, HTML in wrong location, relative script path)
+- ⚠️ Missing: tracts GeoJSON cache, precomputed tract counts
+
+**No source files modified in this session.**
+
+---
+
 ## 2025-10-15 12:19 — Attempted Build Fixes
 
 2025-10-15 16:13:00Z - Added offense groups fixer/validator; normalized JSON.
