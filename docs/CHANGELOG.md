@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-20 17:44 — Census Tracts Implementation COMPLETE ✅
+
+**Status:** ✅ All acceptance criteria met
+
+### New Features
+- ✅ **Tract Geometry Cache:** `public/data/tracts_phl.geojson` (408 tracts, 1.4 MB)
+- ✅ **Always-On Outlines:** Thin dark-gray tract boundaries visible in all modes
+- ✅ **Reusable Legend:** Bottom-right control for both districts and tracts choropleths
+- ✅ **Conditional Choropleth:** Tracts fill visible only when precomputed counts exist
+- ✅ **Robust Fetcher:** 3 fallback endpoints (PASDA, TIGERweb Tracts_Blocks, config)
+
+### Implementation Details
+- **New modules:**
+  - `src/map/tracts_layers.js` — Outline + fill layer management
+  - `src/map/legend.js` — Reusable legend control (replaces drawLegend)
+- **Enhanced modules:**
+  - `scripts/fetch_tracts.mjs` — PASDA + TIGERweb endpoints, GEOID derivation
+  - `src/api/boundaries.js` — Runtime fallback with same endpoints
+  - `src/map/render_choropleth.js` — Integrated legend updates
+  - `src/map/render_choropleth_tracts.js` — Conditional fill + outlines-only banner
+  - `src/main.js` — Initialize legend, load tract outlines on map load
+
+### Test Results
+- ✅ Build succeeds (9.19s, 462 modules)
+- ✅ Preview serves correctly (HTTP 200)
+- ✅ Tract outlines visible in all modes (z-order correct)
+- ✅ Districts legend updates on filter changes
+- ✅ Tracts show outlines-only banner when no counts JSON
+- ✅ No console errors
+
+### Logs
+- Audit: [logs/tracts_audit_20251020_172105.md](../logs/tracts_audit_20251020_172105.md)
+- Fetch: [logs/fetch_tracts_2025-10-20T2124.log](../logs/fetch_tracts_2025-10-20T2124.log)
+- Acceptance: [logs/tracts_accept_20251020_174405.md](../logs/tracts_accept_20251020_174405.md)
+
+### Next Steps
+- Optional: Run `node scripts/precompute_tract_counts.mjs` to enable tract choropleth fill
+- Optional: Add UI checkbox "Show Tract Outlines" for user control
+
+---
+
 2025-10-20 14:20 — Attempted tracts cache generation; endpoints returned 400/invalid GeoJSON; runtime fallback remains; see logs/fetch_tracts_2025-10-20T1820.log and logs/fetch_tracts_20251020_141950.log
 2025-10-20 14:25 — Short dev check completed (HTTP 200); see logs/dev_http_20251020_142456.log
 2025-10-20 14:25 — Build succeeded; see logs/build_20251020_142514.log

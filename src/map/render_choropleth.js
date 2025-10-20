@@ -1,4 +1,5 @@
 import { quantileBreaks } from './style_helpers.js';
+import { updateLegend, hideLegend } from './legend.js';
 
 /**
  * Add or update a districts choropleth from merged GeoJSON.
@@ -11,6 +12,13 @@ export function renderDistrictChoropleth(map, merged) {
   const allZero = values.length === 0 || values.every((v) => v === 0);
   const breaks = allZero ? [] : quantileBreaks(values, 5);
   const colors = ['#f1eef6', '#bdc9e1', '#74a9cf', '#2b8cbe', '#045a8d'];
+
+  // Update legend
+  if (allZero || breaks.length === 0) {
+    hideLegend();
+  } else {
+    updateLegend({ title: 'Districts', unit: '', breaks, colors });
+  }
 
   // Build step expression: ['step', ['get','value'], c0, b1, c1, b2, c2, ...]
   const stepExpr = ['step', ['coalesce', ['get', 'value'], 0], colors[0]];

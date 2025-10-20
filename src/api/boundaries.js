@@ -62,8 +62,10 @@ export async function fetchTractsCachedFirst() {
 
   // 2) Try endpoints in order, normalize props
   const ENDPOINTS = [
-    "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Census_Tracts/FeatureServer/0/query?where=STATE_FIPS='42'%20AND%20COUNTY_FIPS='101'&outFields=FIPS,STATE_FIPS,COUNTY_FIPS,TRACT_FIPS,NAME,POPULATION_2020&returnGeometry=true&f=geojson",
-    "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2023/MapServer/8/query?where=STATE=42%20AND%20COUNTY=101&outFields=STATE,COUNTY,TRACT,NAME,ALAND,AWATER&returnGeometry=true&f=geojson",
+    // PASDA - Philadelphia Census Tracts 2020 (preferred - stable, full coverage)
+    "https://mapservices.pasda.psu.edu/server/rest/services/pasda/CityPhilly/MapServer/28/query?where=1%3D1&outFields=*&f=geojson",
+    // TIGERweb Tracts_Blocks - 2025 vintage (federal, always current)
+    "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query?where=STATE%3D%2742%27%20AND%20COUNTY%3D%27101%27&outFields=STATE,COUNTY,GEOID,NAME,BASENAME,ALAND,AWATER&returnGeometry=true&f=geojson",
   ];
   for (const url of ENDPOINTS) {
     try {
@@ -83,20 +85,37 @@ export async function fetchTractsCachedFirst() {
 }
 
 function isValidTracts(geo) {
-  return geo && geo.type === 'FeatureCollection' && Array.isArray(geo.features) && geo.features.length > 10;
+  return geo && geo.type === 'FeatureCollection' && Array.isArray(geo.features) && geo.features.length >= 300;
 }
 
 function normalizeTractFeature(f) {
   const p = { ...(f.properties || {}) };
+
+  // Extract components (handle various field names)
+  const state = p.STATE_FIPS ?? p.STATE ?? p.STATEFP ?? '42';
+  const county = p.COUNTY_FIPS ?? p.COUNTY ?? p.COUNTYFP ?? '101';
+  const tract = p.TRACT_FIPS ?? p.TRACT ?? p.TRACTCE ?? null;
+
+  // Derive GEOID (11-digit: STATE(2) + COUNTY(3) + TRACT(6))
+  let geoid = p.GEOID ?? null;
+  if (!geoid && state && county && tract) {
+    const statePad = String(state).padStart(2, '0');
+    const countyPad = String(county).padStart(3, '0');
+    const tractPad = String(tract).padStart(6, '0');
+    geoid = `${statePad}${countyPad}${tractPad}`;
+  }
+
   return {
     type: 'Feature',
     geometry: f.geometry,
     properties: {
-      STATE_FIPS: p.STATE_FIPS ?? p.STATE ?? p.STATEFP ?? null,
-      COUNTY_FIPS: p.COUNTY_FIPS ?? p.COUNTY ?? p.COUNTYFP ?? null,
-      TRACT_FIPS: p.TRACT_FIPS ?? p.TRACT ?? p.TRACTCE ?? null,
-      NAME: p.NAME ?? p.NAMELSAD ?? '',
-      POPULATION_2020: p.POPULATION_2020 ?? p.POP ?? null,
+      GEOID: geoid,
+      STATE: state,
+      COUNTY: county,
+      TRACT: tract,
+      NAME: p.NAME ?? p.NAMELSAD ?? p.BASENAME ?? '',
+      ALAND: p.ALAND ?? null,
+      AWATER: p.AWATER ?? null,
     },
   };
 }

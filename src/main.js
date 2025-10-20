@@ -16,6 +16,9 @@ import * as turf from '@turf/turf';
 import { getTractsMerged } from './map/tracts_view.js';
 import { renderTractsChoropleth } from './map/render_choropleth_tracts.js';
 import { upsertSelectedDistrict, clearSelectedDistrict, upsertSelectedTract, clearSelectedTract } from './map/selection_layers.js';
+import { initLegend } from './map/legend.js';
+import { upsertTractsOutline } from './map/tracts_layers.js';
+import { fetchTractsCachedFirst } from './api/boundaries.js';
 
 window.__dashboard = {
   setChoropleth: (/* future hook */) => {},
@@ -39,11 +42,24 @@ window.addEventListener('DOMContentLoaded', async () => {
     store.setCenterFromLngLat(c.lng, c.lat);
     const merged = await getDistrictsMerged({ start, end });
 
-    map.on('load', () => {
-      const { breaks, colors } = renderDistrictChoropleth(map, merged);
-      drawLegend(breaks, colors, '#legend');
+    map.on('load', async () => {
+      // Initialize legend control
+      initLegend();
+
+      // Render districts (legend updated inside)
+      renderDistrictChoropleth(map, merged);
       attachHover(map, 'districts-fill');
       attachDistrictPopup(map, 'districts-fill');
+
+      // Load and render tract outlines (always-on, above districts fill)
+      try {
+        const tractsGeo = await fetchTractsCachedFirst();
+        if (tractsGeo && tractsGeo.features && tractsGeo.features.length > 0) {
+          upsertTractsOutline(map, tractsGeo);
+        }
+      } catch (err) {
+        console.warn('Failed to load tract outlines:', err);
+      }
     });
   } catch (err) {
     console.warn('Choropleth demo failed:', err);
@@ -89,8 +105,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     try {
       if (store.adminLevel === 'tracts') {
         const merged = await getTractsMerged({ per10k: store.per10k });
-        const { breaks, colors } = renderTractsChoropleth(map, merged);
-        drawLegend(breaks, colors, '#legend');
+        renderTractsChoropleth(map, merged); // Legend updated inside
         // maintain tract highlight based on selection
         if (store.queryMode === 'tract' && selectedTractGEOID) {
           upsertSelectedTract(map, selectedTractGEOID);
@@ -120,8 +135,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
       } else {
         const merged = await getDistrictsMerged({ start, end, types });
-        const { breaks, colors } = renderDistrictChoropleth(map, merged);
-        drawLegend(breaks, colors, '#legend');
+        renderDistrictChoropleth(map, merged); // Legend updated inside
         // maintain district highlight based on selection
         if (store.queryMode === 'district' && selectedDistrictCode) {
           upsertSelectedDistrict(map, selectedDistrictCode);
