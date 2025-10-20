@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script type="module" src="/@vite/client"></script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Renter-Oriented Crime Dashboard</title>
@@ -22,8 +24,6 @@
         transform: translate(8px, -8px);
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-CYTeWcVr.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-rqFrHuTF.css">
   </head>
   <body>
     <div id="map"></div>
@@ -128,5 +128,6 @@
         <canvas id="chart-7x24" height="180"></canvas>
       </div>
     </div>
+    <script type="module" src="/src/main.js"></script>
   </body>
   </html>

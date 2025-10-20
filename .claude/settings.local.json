@@ -17,7 +17,9 @@
       "Bash(cmd /c \"dir logs\\*.log /O-D /B\")",
       "Bash(awk:*)",
       "Bash(echo $ts)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(curl -v http://localhost:4173/)",
+      "Bash(Write-Output $ts)"
     ],
     "deny": [],
     "ask": []

@@ -70,16 +70,16 @@ npm run preview
 
 ## How to Use the Dashboard
 
-- Use map selection: click “Select on map” then click the map to set the A center; press Esc or click the button again to cancel. A translucent circle shows the current buffer.
+- Use map selection: click “Select on map�?then click the map to set the A center; press Esc or click the button again to cancel. A translucent circle shows the current buffer.
 - Radius: changes the buffer radius used by points, charts, and the compare card; the district choropleth is unaffected by radius.
-- Time window: pick a start month and duration (3/6/12/24). Presets “Last 6m/12m” help jump quickly.
+- Time window: pick a start month and duration (3/6/12/24). Presets “Last 6m/12m�?help jump quickly.
 - Offense grouping & drilldown: pick one or more groups, then optionally drill down into specific codes (the list reflects live audited codes).
-- Admin level: switch between Districts and Tracts; per‑10k requires tracts + ACS.
+- Admin level: switch between Districts and Tracts; per�?0k requires tracts + ACS.
 - Clusters: when too many points are present, clusters are shown with a prompt to zoom in.
 
 - Charts are implemented with Chart.js v4. Before running the app, install dependencies:
   `npm i`
-- First run may download ~1–2 MB of packages.
+- First run may download ~1�? MB of packages.
 - Rebuild anytime with `npm run build`.
  - Requires `npm i` to install chart.js; see `logs/vite_build_*.log` for bundling status.
 
@@ -114,18 +114,18 @@ npm run preview
 
 ## Compare A/B Semantics
 
-- “A vs B” compares buffer‑based totals around two centers using the same time window and offense filters.
-- Per‑10k rates are only computed when the Tracts layer and ACS population are loaded for the relevant geography; otherwise per‑10k is omitted.
+- “A vs B�?compares buffer‑based totals around two centers using the same time window and offense filters.
+- Per�?0k rates are only computed when the Tracts layer and ACS population are loaded for the relevant geography; otherwise per�?0k is omitted.
 
-## Tracts + ACS (per‑10k)
+## Tracts + ACS (per�?0k)
 
 - The "Tracts" admin level uses cached tracts geometry and ACS 2023 tract stats.
-- Per‑10k rates are computed as (value / population) * 10,000 when population data is available.
+- Per�?0k rates are computed as (value / population) * 10,000 when population data is available.
 - Tracts with population < 500 are masked from the choropleth to avoid unstable rates.
 
 ## Precompute tract counts
 
-- To speed up tracts choropleths for longer windows, you can precompute last‑12‑months crime counts per tract:
+- To speed up tracts choropleths for longer windows, you can precompute last�?2‑months crime counts per tract:
   - Run: `node scripts/precompute_tract_counts.mjs`
   - Output JSON: `src/data/tract_counts_last12m.json`
   - Logs: `logs/precompute_tract_counts_*.log`
@@ -139,3 +139,8 @@ npm run preview
 - **Deployment Guide:** [docs/DEPLOY.md](docs/DEPLOY.md) - Run modes (dev/preview), why raw file access fails, troubleshooting
 - **Known Issues:** [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) - Current blockers, performance issues, workarounds
 - **Changelog:** [docs/CHANGELOG.md](docs/CHANGELOG.md) - Feature history, implementation notes, diagnostic logs
+
+
+Quick Start: index.html is at repo root; use 
+pm run dev for local dev or 
+pm run preview after a build.

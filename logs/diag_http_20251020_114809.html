@@ -1,6 +1,13 @@
-<!doctype html>
+* Host localhost:5173 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0<!doctype html>
 <html lang="en">
   <head>
+    <script type="module" src="/@vite/client"></script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Renter-Oriented Crime Dashboard</title>
@@ -22,8 +29,6 @@
         transform: translate(8px, -8px);
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-CYTeWcVr.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-rqFrHuTF.css">
   </head>
   <body>
     <div id="map"></div>
@@ -73,7 +78,27 @@
         </div>
       </div>
 
-      <label for="groupSel" style="display:block; font-size:12px; color:#374151;">Offense Groups</label>
+      <label for="groupSel" style="display:b*   Trying [::1]:5173...
+* Connected to localhost (::1) port 5173
+* using HTTP/1.x
+> GET / HTTP/1.1
+> Host: localhost:5173
+> User-Agent: curl/8.15.0
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Vary: Origin
+< Content-Type: text/html
+< Cache-Control: no-cache
+< Etag: W/"1e5e-ae6ZJyDiLuQS/82aLIG8O8n/Xlk"
+< Date: Mon, 20 Oct 2025 15:50:15 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< Content-Length: 7774
+< 
+{ [7774 bytes data]
+100  7774  100  7774    0     0   188k      0 --:--:-- --:--:-- --:--:--  189klock; font-size:12px; color:#374151;">Offense Groups</label>
       <select id="groupSel" multiple size="6" style="width:100%; margin-bottom:8px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;">
         <option value="property">Property</option>
         <option value="vehicle">Vehicle</option>
@@ -128,5 +153,8 @@
         <canvas id="chart-7x24" height="180"></canvas>
       </div>
     </div>
+    <script type="module" src="/src/main.js"></script>
   </body>
   </html>
+
+* Connection #0 to host localhost left intact

@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-20 11:07 — Acceptance Test PASS
+
+**Status:** ✅ All blockers resolved, production deployment ready
+
+### Tests Passed
+- ✅ **Dev mode:** `npm run dev` → Server starts, HTTP 200 OK ([logs/acc_dev_20251020_110731.log](../logs/acc_dev_20251020_110731.log))
+- ✅ **Build:** `npm run build` → Succeeds without errors ([logs/acc_build_20251020_110731.log](../logs/acc_build_20251020_110731.log))
+- ✅ **Preview:** `npm run preview` → Server starts, HTTP 200 OK ([logs/acc_http_preview_20251020_110731_retry.log](../logs/acc_http_preview_20251020_110731_retry.log))
+
+### Structure Verified
+- ✅ `/index.html` at project root (moved from public/)
+- ✅ `public/` contains only static assets (police_districts.geojson)
+- ✅ `vite.config.js` simplified to `{ build: { outDir: 'dist' } }` (no root override)
+- ✅ Script tag uses absolute path `/src/main.js`
+
+### Code Verified
+- ✅ `offense_groups.json` — All values are arrays (Property: ["Thefts"])
+- ✅ Point guard active — `MAX_UNCLUSTERED = 20000` with "Too many points" banner
+- ✅ Buffer overlay — `turf.circle` creates immediate visual feedback
+- ✅ Panel debounce — 300ms delay on data refresh
+
+### Artifacts Status
+- ⚠️ `public/data/tracts_phl.geojson` — Not present (remote fallback +2-3s)
+- ⚠️ `src/data/tract_counts_last12m.json` — Not present (live aggregation slower)
+- **Recommendation:** Run `node scripts/fetch_tracts.mjs` and `node scripts/precompute_tract_counts.mjs` periodically
+
+### Updated Documentation
+- [docs/KNOWN_ISSUES.md](KNOWN_ISSUES.md) — Moved Vite blocker to Resolved, updated timestamp
+- [docs/CHANGELOG.md](CHANGELOG.md) — This entry
+
+---
+
 ## 2025-10-15 15:26 local — Diagnostic Re-Check + Blocker Update
 
 ### Summary
@@ -65,3 +97,14 @@ Re-validated the dashboard after initial blocker fixes were attempted. Found tha
 2025-10-15T12:16:53 - Fixed invalid optional chaining in main.js; added instant radius overlay via buffer_overlay; panel radius input wired.
 2025-10-15T12:19:45 - Removed root index.html; configured Vite root=public; build succeeded(?); preview logs captured.
 2025-10-15T12:19:45 - Added buffer_overlay and panel radius input handler for instant circle updates.
+2025-10-20T11:01:59.5319407-04:00 - Vite structure fixed (single /index.html at root; simplified vite.config.js).
+2025-10-20T11:02:28.1260704-04:00 - Build PASS with root index.html; preview check to follow.
+2025-10-20T11:03:28.7172823-04:00 - Tracts cache fetch attempted; endpoints flaky (no local cache written).
+2025-10-20T11:03:50.1000618-04:00 - Precompute script ran; output missing or partial (see logs).
+2025-10-20T11:04:10.8518999-04:00 - Added >20k points guard constant and banner message; prevents freezes when zoomed out.
+2025-10-20T11:04:25.7628502-04:00 - README Quick Start updated for root index.html and dev/preview steps.
+2025-10-20T11:04:44.9790206-04:00 - Added docs/DEPLOY.md with Quick Start note.
+2025-10-20T12:08:43.8832032-04:00 - Coverage probe script added and executed; coverage log written.
+2025-10-20T12:09:39.6438250-04:00 - Default time window aligned to dataset coverage (auto from MAX date).
+2025-10-20T12:09:39.6468266-04:00 - Charts guarded until center is chosen (status tip shown).
+2025-10-20T12:09:39.6491974-04:00 - Districts empty-window banner implemented.

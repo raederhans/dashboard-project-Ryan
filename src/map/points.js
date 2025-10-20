@@ -42,6 +42,8 @@ function unclusteredColorExpression() {
  * @param {import('maplibre-gl').Map} map
  * @param {{start:string,end:string,types?:string[]}} params
  */
+const MAX_UNCLUSTERED = 20000;
+
 export async function refreshPoints(map, { start, end, types } = {}) {
   const { srcId, clusterId, clusterCountId, unclusteredId } = ensureSourcesAndLayers(map);
 
@@ -113,11 +115,11 @@ export async function refreshPoints(map, { start, end, types } = {}) {
   }
 
   // Unclustered single points
-  const tooMany = count > 20000;
+  const tooMany = count > MAX_UNCLUSTERED;
   const existsUnclustered = !!map.getLayer(unclusteredId);
   if (tooMany) {
     if (existsUnclustered) map.removeLayer(unclusteredId);
-    ensureBanner('Zoom in to see individual incidents');
+    ensureBanner('Too many points — zoom in to see details.');
   } else {
     if (count === 0) {
       ensureBanner('No incidents for selected filters — try expanding time window or offense groups');
@@ -140,6 +142,18 @@ export async function refreshPoints(map, { start, end, types } = {}) {
         }
       });
     }
+  }
+}
+
+export function clearCrimePoints(map) {
+  const srcId = 'crime-points';
+  for (const id of ['unclustered','cluster-count','clusters']) {
+    if (map.getLayer(id)) {
+      try { map.removeLayer(id); } catch {}
+    }
+  }
+  if (map.getSource(srcId)) {
+    try { map.removeSource(srcId); } catch {}
   }
 }
 

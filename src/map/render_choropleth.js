@@ -8,7 +8,8 @@ import { quantileBreaks } from './style_helpers.js';
  */
 export function renderDistrictChoropleth(map, merged) {
   const values = (merged?.features || []).map((f) => Number(f?.properties?.value) || 0);
-  const breaks = quantileBreaks(values, 5);
+  const allZero = values.length === 0 || values.every((v) => v === 0);
+  const breaks = allZero ? [] : quantileBreaks(values, 5);
   const colors = ['#f1eef6', '#bdc9e1', '#74a9cf', '#2b8cbe', '#045a8d'];
 
   // Build step expression: ['step', ['get','value'], c0, b1, c1, b2, c2, ...]
@@ -33,13 +34,16 @@ export function renderDistrictChoropleth(map, merged) {
       id: fillId,
       type: 'fill',
       source: sourceId,
-      paint: {
+      paint: allZero ? {
+        'fill-color': '#e5e7eb', 'fill-opacity': 0.6,
+      } : {
         'fill-color': stepExpr,
         'fill-opacity': 0.75,
       },
     });
   } else {
-    map.setPaintProperty(fillId, 'fill-color', stepExpr);
+    map.setPaintProperty(fillId, 'fill-color', allZero ? '#e5e7eb' : stepExpr);
+    map.setPaintProperty(fillId, 'fill-opacity', allZero ? 0.6 : 0.75);
   }
 
   if (!map.getLayer(lineId)) {
@@ -47,11 +51,20 @@ export function renderDistrictChoropleth(map, merged) {
       id: lineId,
       type: 'line',
       source: sourceId,
-      paint: {
-        'line-color': '#333',
-        'line-width': 1,
-      },
+      paint: { 'line-color': '#333', 'line-width': 1 },
     });
+  }
+
+  if (allZero) {
+    const pane = document.getElementById('charts') || document.body;
+    const status = document.getElementById('charts-status') || (() => {
+      const d = document.createElement('div');
+      d.id = 'charts-status';
+      d.style.cssText = 'position:absolute;right:16px;top:16px;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);background:#fff;font:14px/1.4 system-ui';
+      pane.appendChild(d);
+      return d;
+    })();
+    status.textContent = 'No incidents in selected window. Adjust the time range.';
   }
 
   if (!map.getLayer(labelId)) {

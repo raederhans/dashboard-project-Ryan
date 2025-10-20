@@ -3,6 +3,7 @@
  */
 import dayjs from 'dayjs';
 import { expandGroupsToCodes } from '../utils/types.js';
+import { fetchCoverage } from '../api/meta.js';
 
 /**
  * @typedef {object} Store
@@ -35,6 +36,8 @@ export const store = /** @type {Store} */ ({
   per10k: false,
   mapBbox: null,
   center3857: null,
+  coverageMin: null,
+  coverageMax: null,
   getStartEnd() {
     if (this.startMonth && this.durationMonths) {
       const startD = dayjs(`${this.startMonth}-01`).startOf('month');
@@ -60,3 +63,23 @@ export const store = /** @type {Store} */ ({
     this.centerLonLat = [lng, lat];
   },
 });
+
+/**
+ * Probe coverage and set default window to last 12 months ending at coverage max.
+ */
+export async function initCoverageAndDefaults() {
+  try {
+    const { min, max } = await fetchCoverage();
+    store.coverageMin = min;
+    store.coverageMax = max;
+    if (!store.startMonth && max) {
+      const maxDate = new Date(max);
+      const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 1);
+      const startMonth = new Date(endMonth.getFullYear(), endMonth.getMonth() - 12, 1);
+      store.startMonth = `${startMonth.getFullYear()}-${String(startMonth.getMonth() + 1).padStart(2, '0')}`;
+      store.durationMonths = 12;
+    }
+  } catch (e) {
+    // leave defaults; fallback handled in README known issues
+  }
+}
