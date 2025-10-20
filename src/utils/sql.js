@@ -69,7 +69,7 @@ export function envelopeClause(bbox) {
  * @param {number[] | {xmin:number, ymin:number, xmax:number, ymax:number}} [params.bbox] - Bounding box in EPSG:3857.
  * @returns {string} SQL statement.
  */
-export function buildCrimePointsSQL({ start, end, types, bbox }) {
+export function buildCrimePointsSQL({ start, end, types, bbox, dc_dist }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
   const clauses = baseTemporalClauses(startIso, endIso, types);
@@ -77,6 +77,9 @@ export function buildCrimePointsSQL({ start, end, types, bbox }) {
   const bboxClause = envelopeClause(bbox);
   if (bboxClause) {
     clauses.push(`  ${bboxClause}`);
+  }
+  if (dc_dist) {
+    clauses.push(`  ${buildDistrictFilter(dc_dist)}`);
   }
 
   return [
@@ -94,10 +97,11 @@ export function buildCrimePointsSQL({ start, end, types, bbox }) {
  * @param {string[]} [params.types] - Optional offense filters.
  * @returns {string} SQL statement.
  */
-export function buildMonthlyCitySQL({ start, end, types }) {
+export function buildMonthlyCitySQL({ start, end, types, dc_dist }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
   const clauses = baseTemporalClauses(startIso, endIso, types);
+  if (dc_dist) clauses.push(`  ${buildDistrictFilter(dc_dist)}`);
 
   return [
     "SELECT date_trunc('month', dispatch_date_time) AS m, COUNT(*) AS n",
@@ -240,6 +244,34 @@ export function buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit = 5
     ...clauses,
     `GROUP BY 1 ORDER BY n DESC LIMIT ${ensurePositiveInt(limit,'limit')}`,
   ].join('\n');
+}
+
+/**
+ * 7x24 heatmap aggregates filtered by district code.
+ * @param {{start:string,end:string,types?:string[],dc_dist:string}} p
+ */
+export function buildHeatmap7x24DistrictSQL({ start, end, types, dc_dist }) {
+  const startIso = dateFloorGuard(start);
+  const endIso = ensureIso(end, 'end');
+  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const dist = String(dc_dist).padStart(2, '0').replace(/'/g, "''");
+  clauses.push(`  AND dc_dist = '${dist}'`);
+  return [
+    "SELECT EXTRACT(DOW  FROM dispatch_date_time AT TIME ZONE 'America/New_York') AS dow,",
+    "       EXTRACT(HOUR FROM dispatch_date_time AT TIME ZONE 'America/New_York') AS hr,",
+    "       COUNT(*) AS n",
+    "FROM incidents_part1_part2",
+    ...clauses,
+    "GROUP BY 1,2 ORDER BY 1,2",
+  ].join('\n');
+}
+
+/**
+ * District filter helper.
+ */
+export function buildDistrictFilter(districtCode) {
+  const dist = String(districtCode).padStart(2, '0').replace(/'/g, "''");
+  return `AND dc_dist = '${dist}'`;
 }
 
 /**

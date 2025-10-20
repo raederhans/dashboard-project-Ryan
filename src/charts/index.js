@@ -8,6 +8,8 @@ import {
   fetchMonthlySeriesBuffer,
   fetchTopTypesBuffer,
   fetch7x24Buffer,
+  fetchTopTypesByDistrict,
+  fetch7x24District,
 } from '../api/crime.js';
 
 function byMonthRows(rows) {
@@ -29,17 +31,56 @@ function buildMatrix(dowHrRows) {
  * Fetch and render all charts using the provided filters.
  * @param {{start:string,end:string,types?:string[],center3857:[number,number],radiusM:number}} params
  */
-export async function updateAllCharts({ start, end, types = [], center3857, radiusM }) {
+export async function updateAllCharts({ start, end, types = [], center3857, radiusM, queryMode, selectedDistrictCode }) {
   try {
-    const [city, buf, topn, heat] = await Promise.all([
-      fetchMonthlySeriesCity({ start, end, types }),
-      fetchMonthlySeriesBuffer({ start, end, types, center3857, radiusM }),
-      fetchTopTypesBuffer({ start, end, center3857, radiusM, limit: 12 }),
-      fetch7x24Buffer({ start, end, types, center3857, radiusM }),
-    ]);
+    let city, bufOrArea, topn, heat;
+    if (queryMode === 'district' && selectedDistrictCode) {
+      [city, topn, heat] = await Promise.all([
+        fetchMonthlySeriesCity({ start, end, types, dc_dist: selectedDistrictCode }),
+        fetchTopTypesByDistrict({ start, end, types, dc_dist: selectedDistrictCode, limit: 12 }),
+        fetch7x24District({ start, end, types, dc_dist: selectedDistrictCode }),
+      ]);
+      bufOrArea = { rows: [] }; // no buffer series overlay in district mode
+    } else if (queryMode === 'buffer') {
+      if (!center3857) {
+        const pane = document.getElementById('charts') || document.body;
+        const status = document.getElementById('charts-status') || (() => {
+          const d = document.createElement('div');
+          d.id = 'charts-status';
+          d.style.cssText = 'position:absolute;right:16px;top:16px;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);background:#fff;font:14px/1.4 system-ui';
+          pane.appendChild(d);
+          return d;
+        })();
+        status.textContent = 'Tip: click the map to set a center and show buffer-based charts.';
+        return; // skip
+      }
+      [city, bufOrArea, topn, heat] = await Promise.all([
+        fetchMonthlySeriesCity({ start, end, types }),
+        fetchMonthlySeriesBuffer({ start, end, types, center3857, radiusM }),
+        fetchTopTypesBuffer({ start, end, center3857, radiusM, limit: 12 }),
+        fetch7x24Buffer({ start, end, types, center3857, radiusM }),
+      ]);
+    } else {
+      // tract mode (MVP): show citywide only, disable others
+      [city] = await Promise.all([
+        fetchMonthlySeriesCity({ start, end, types }),
+      ]);
+      topn = { rows: [] };
+      heat = { rows: [] };
+      bufOrArea = { rows: [] };
+      const pane = document.getElementById('charts') || document.body;
+      const status = document.getElementById('charts-status') || (() => {
+        const d = document.createElement('div');
+        d.id = 'charts-status';
+        d.style.cssText = 'position:absolute;right:16px;top:16px;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);background:#fff;font:14px/1.4 system-ui';
+        pane.appendChild(d);
+        return d;
+      })();
+      status.textContent = 'Tract mode: charts are disabled for this cycle (citywide series only).';
+    }
 
     const cityRows = Array.isArray(city?.rows) ? city.rows : city;
-    const bufRows = Array.isArray(buf?.rows) ? buf.rows : buf;
+    const bufRows = Array.isArray(bufOrArea?.rows) ? bufOrArea.rows : bufOrArea;
     const topRows = Array.isArray(topn?.rows) ? topn.rows : topn;
     const heatRows = Array.isArray(heat?.rows) ? heat.rows : heat;
 
@@ -60,6 +101,22 @@ export async function updateAllCharts({ start, end, types = [], center3857, radi
     const heatCtx = heatEl && heatEl.getContext ? heatEl.getContext('2d') : null;
     if (!heatCtx) throw new Error('chart canvas missing: #chart-7x24');
     render7x24(heatCtx, buildMatrix(heatRows));
+
+    // Empty-window banner
+    const allZeroCity = (Array.isArray(cityRows) && cityRows.length > 0) ? cityRows.every(r => Number(r.n||0) === 0) : false;
+    const noneTop = !Array.isArray(topRows) || topRows.length === 0;
+    const noneHeat = !Array.isArray(heatRows) || heatRows.length === 0;
+    if (allZeroCity && noneTop && noneHeat) {
+      const pane = document.getElementById('charts') || document.body;
+      const status = document.getElementById('charts-status') || (() => {
+        const d = document.createElement('div');
+        d.id = 'charts-status';
+        d.style.cssText = 'position:absolute;right:16px;top:16px;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);background:#fff;font:14px/1.4 system-ui';
+        pane.appendChild(d);
+        return d;
+      })();
+      status.textContent = 'No incidents in selected window. Adjust the time range.';
+    }
   } catch (e) {
     console.error(e);
     const pane = document.getElementById('charts') || document.body;

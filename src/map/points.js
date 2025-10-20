@@ -44,11 +44,12 @@ function unclusteredColorExpression() {
  */
 const MAX_UNCLUSTERED = 20000;
 
-export async function refreshPoints(map, { start, end, types } = {}) {
+export async function refreshPoints(map, { start, end, types, queryMode, selectedDistrictCode } = {}) {
   const { srcId, clusterId, clusterCountId, unclusteredId } = ensureSourcesAndLayers(map);
 
   const bbox = mapBboxTo3857(map);
-  const sql = buildCrimePointsSQL({ start, end, types, bbox });
+  const dc_dist = queryMode === 'district' && selectedDistrictCode ? selectedDistrictCode : undefined;
+  const sql = buildCrimePointsSQL({ start, end, types, bbox, dc_dist });
   const url = `${CARTO_SQL_BASE}?format=GeoJSON&q=${encodeURIComponent(sql)}`;
 
   const geo = await fetchJson(url, { cacheTTL: 30_000 });

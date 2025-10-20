@@ -17,6 +17,11 @@ export function initPanel(store, handlers) {
   const addrA = document.getElementById('addrA');
   const useCenterBtn = document.getElementById('useCenterBtn');
   const useMapHint = document.getElementById('useMapHint');
+  const queryModeSel = document.getElementById('queryModeSel');
+  const queryModeHelp = document.getElementById('queryModeHelp');
+  const clearSelBtn = document.getElementById('clearSelBtn');
+  const bufferSelectRow = document.getElementById('bufferSelectRow');
+  const bufferRadiusRow = document.getElementById('bufferRadiusRow');
   const radiusSel = document.getElementById('radiusSel');
   const twSel = document.getElementById('twSel');
   const groupSel = document.getElementById('groupSel');
@@ -97,13 +102,74 @@ export function initPanel(store, handlers) {
     onChange();
   });
 
+  function applyModeUI() {
+    const mode = store.queryMode || 'buffer';
+    const isBuffer = mode === 'buffer';
+    if (bufferSelectRow) bufferSelectRow.style.display = isBuffer ? '' : 'none';
+    if (bufferRadiusRow) bufferRadiusRow.style.display = isBuffer ? '' : 'none';
+    if (useMapHint) useMapHint.style.display = (isBuffer && store.selectMode === 'point') ? 'block' : 'none';
+    if (clearSelBtn) clearSelBtn.style.display = isBuffer ? 'none' : '';
+    if (queryModeHelp) {
+      queryModeHelp.textContent = (
+        mode === 'buffer'
+          ? 'Buffer mode: click “Select on map”, then click map to set center.'
+          : mode === 'district'
+            ? 'District mode: click a police district on the map to select it.'
+            : 'Tract mode: click a census tract to select it.'
+      );
+    }
+  }
+
+  // Mode selection
+  queryModeSel?.addEventListener('change', () => {
+    const old = store.queryMode;
+    const mode = queryModeSel.value;
+    store.queryMode = mode;
+    if (mode === 'buffer') {
+      // keep center/radius; clear polygon selections
+      store.selectedDistrictCode = null;
+      store.selectedTractGEOID = null;
+    } else if (mode === 'district') {
+      // clear buffer; clear tract selection
+      store.center3857 = null; store.centerLonLat = null; store.selectMode = 'idle';
+      store.selectedTractGEOID = null;
+    } else if (mode === 'tract') {
+      // clear buffer; clear district selection
+      store.center3857 = null; store.centerLonLat = null; store.selectMode = 'idle';
+      store.selectedDistrictCode = null;
+    }
+    applyModeUI();
+    onChange();
+  });
+
+  // Clear selection
+  clearSelBtn?.addEventListener('click', () => {
+    store.selectedDistrictCode = null;
+    store.selectedTractGEOID = null;
+    applyModeUI();
+    onChange();
+  });
+
+  // Esc exits transient selection mode
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && store.selectMode === 'point') {
+      store.selectMode = 'idle';
+      if (useCenterBtn) useCenterBtn.textContent = 'Select on map';
+      if (useMapHint) useMapHint.style.display = 'none';
+      document.body.style.cursor = '';
+    }
+  });
+
   // initialize defaults
   if (radiusSel) radiusSel.value = String(store.radius || 400);
   if (twSel) twSel.value = String(store.timeWindowMonths || 6);
   if (adminSel) adminSel.value = String(store.adminLevel || 'districts');
   if (rateSel) rateSel.value = store.per10k ? 'per10k' : 'counts';
+  if (queryModeSel) queryModeSel.value = store.queryMode || 'buffer';
   if (startMonth && store.startMonth) startMonth.value = store.startMonth;
   if (durationSel) durationSel.value = String(store.durationMonths || 6);
+
+  applyModeUI();
 
   startMonth?.addEventListener('change', () => { store.startMonth = startMonth.value || null; onChange(); });
   durationSel?.addEventListener('change', () => { store.durationMonths = Number(durationSel.value) || 6; onChange(); });

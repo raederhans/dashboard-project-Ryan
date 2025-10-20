@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+2025-10-20 14:20 — Attempted tracts cache generation; endpoints returned 400/invalid GeoJSON; runtime fallback remains; see logs/fetch_tracts_2025-10-20T1820.log and logs/fetch_tracts_20251020_141950.log
+2025-10-20 14:25 — Short dev check completed (HTTP 200); see logs/dev_http_20251020_142456.log
+2025-10-20 14:25 — Build succeeded; see logs/build_20251020_142514.log
+2025-10-20 14:25 — Preview served (HTTP 200); see logs/preview_http_20251020_142550.log
+2025-10-20 14:24 — npm install completed; see logs/npm_install_20251020_142409.log
+2025-10-20 16:42 — Added queryMode + selectedDistrictCode/selectedTractGEOID to store; UI wires Query Mode selector and hides buffer-only controls when not in buffer; Esc exits selection; clear button added.
+2025-10-20 16:42 — District-scoped filtering for series/topN/7x24 and points; buffer charts guarded until center; see logs/area_sql_*.log and logs/mode_switch_smoke_*.log
+2025-10-20 16:42 — Drilldown auto-clears when groups change; dev console shows cache HIT/MISS lines (development only); empty-window banner reinforced.
+
 ## 2025-10-20 11:07 — Acceptance Test PASS
 
 **Status:** ✅ All blockers resolved, production deployment ready

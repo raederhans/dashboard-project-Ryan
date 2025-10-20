@@ -11,8 +11,8 @@ import * as Q from "../utils/sql.js";
  * @param {number[] | {xmin:number, ymin:number, xmax:number, ymax:number}} [params.bbox] - Map bounding box in EPSG:3857.
  * @returns {Promise<object>} GeoJSON FeatureCollection.
  */
-export async function fetchPoints({ start, end, types, bbox }) {
-  const sql = Q.buildCrimePointsSQL({ start, end, types, bbox });
+export async function fetchPoints({ start, end, types, bbox, dc_dist }) {
+  const sql = Q.buildCrimePointsSQL({ start, end, types, bbox, dc_dist });
   await logQuery('fetchPoints', sql);
   return fetchJson(CARTO_SQL_BASE, {
     method: 'POST',
@@ -30,8 +30,8 @@ export async function fetchPoints({ start, end, types, bbox }) {
  * @param {string[]} [params.types] - Optional offense filters.
  * @returns {Promise<object>} Aggregated results keyed by month.
  */
-export async function fetchMonthlySeriesCity({ start, end, types }) {
-  const sql = Q.buildMonthlyCitySQL({ start, end, types });
+export async function fetchMonthlySeriesCity({ start, end, types, dc_dist }) {
+  const sql = Q.buildMonthlyCitySQL({ start, end, types, dc_dist });
   await logQuery('fetchMonthlySeriesCity', sql);
   return fetchJson(CARTO_SQL_BASE, {
     method: 'POST',
@@ -165,6 +165,17 @@ export async function fetchByDistrict({ start, end, types }) {
 export async function fetchTopTypesByDistrict({ start, end, types, dc_dist, limit = 5 }) {
   const sql = Q.buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit });
   await logQuery('fetchTopTypesByDistrict', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 60_000,
+  });
+}
+
+/**
+ * Fetch 7x24 heat aggregates filtered by a police district.
+ */
+export async function fetch7x24District({ start, end, types, dc_dist }) {
+  const sql = Q.buildHeatmap7x24DistrictSQL({ start, end, types, dc_dist });
+  await logQuery('fetch7x24District', sql);
   return fetchJson(CARTO_SQL_BASE, {
     method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 60_000,
   });

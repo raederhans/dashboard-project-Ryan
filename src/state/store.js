@@ -33,11 +33,15 @@ export const store = /** @type {Store} */ ({
   adminLevel: 'districts',
   selectMode: 'idle',
   centerLonLat: null,
-  per10k: false,
+ per10k: false,
   mapBbox: null,
   center3857: null,
   coverageMin: null,
   coverageMax: null,
+  // Query mode and selections
+  queryMode: 'buffer', // 'buffer' | 'district' | 'tract'
+  selectedDistrictCode: null,
+  selectedTractGEOID: null,
   getStartEnd() {
     if (this.startMonth && this.durationMonths) {
       const startD = dayjs(`${this.startMonth}-01`).startOf('month');
@@ -53,7 +57,16 @@ export const store = /** @type {Store} */ ({
     const types = (this.selectedTypes && this.selectedTypes.length)
       ? this.selectedTypes.slice()
       : expandGroupsToCodes(this.selectedGroups || []);
-    return { start, end, types, center3857: this.center3857, radiusM: this.radius };
+    return {
+      start,
+      end,
+      types,
+      center3857: this.center3857,
+      radiusM: this.radius,
+      queryMode: this.queryMode,
+      selectedDistrictCode: this.selectedDistrictCode,
+      selectedTractGEOID: this.selectedTractGEOID,
+    };
   },
   setCenterFromLngLat(lng, lat) {
     const R = 6378137;

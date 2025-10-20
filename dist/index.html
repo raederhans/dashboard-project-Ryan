@@ -22,7 +22,7 @@
         transform: translate(8px, -8px);
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-CYTeWcVr.js"></script>
+    <script type="module" crossorigin src="/assets/index-BREMSB_K.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-rqFrHuTF.css">
   </head>
   <body>
@@ -31,15 +31,26 @@
     <div id="tooltip"></div>
     <div id="sidepanel" style="position:fixed; left:12px; top:12px; z-index:18; width:300px; max-height:88vh; overflow:auto; background:rgba(255,255,255,0.97); padding:12px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.15)">
       <div style="font:600 14px/1.2 system-ui, sans-serif; margin-bottom:8px;">Controls</div>
-      <label for="addrA" style="display:block; font-size:12px; color:#374151;">Address A</label>
-      <div style="display:flex; gap:6px; margin-bottom:8px;">
-        <input id="addrA" type="text" placeholder="Enter address (placeholder)" style="flex:1; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;" />
-        <button id="useCenterBtn" style="padding:6px 8px; border:1px solid #94a3b8; background:#f8fafc; border-radius:6px; cursor:pointer;">Select on map</button>
+
+      <label for="queryModeSel" style="display:block; font-size:12px; color:#374151;">Query Mode</label>
+      <select id="queryModeSel" style="width:100%; margin-bottom:4px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;">
+        <option value="buffer" selected>Buffer</option>
+        <option value="district">Police District</option>
+        <option value="tract">Census Tract</option>
+      </select>
+      <div id="queryModeHelp" style="color:#64748b; font-size:12px; margin-bottom:8px;">Buffer mode: click “Select on map”, then click map to set center.</div>
+      <button id="clearSelBtn" style="display:none; margin-bottom:8px; padding:6px 8px; border:1px solid #94a3b8; background:#f8fafc; border-radius:6px; cursor:pointer;">Clear selection</button>
+      <div id="bufferSelectRow">
+        <label for="addrA" style="display:block; font-size:12px; color:#374151;">Address A</label>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <input id="addrA" type="text" placeholder="Enter address (placeholder)" style="flex:1; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;" />
+          <button id="useCenterBtn" style="padding:6px 8px; border:1px solid #94a3b8; background:#f8fafc; border-radius:6px; cursor:pointer;">Select on map</button>
+        </div>
+        <div id="useMapHint" style="display:none; color:#64748b; font-size:12px; margin-top:-4px; margin-bottom:8px;">Click the map to set A (center). Press Esc to cancel.</div>
       </div>
-      <div id="useMapHint" style="display:none; color:#64748b; font-size:12px; margin-top:-4px; margin-bottom:8px;">Click the map to set A (center). Press Esc to cancel.</div>
 
       <div style="display:flex; gap:10px; margin-bottom:8px;">
-        <div style="flex:1;">
+        <div id="bufferRadiusRow" style="flex:1;">
           <label for="radiusSel" style="display:block; font-size:12px; color:#374151;">Radius</label>
           <select id="radiusSel" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;">
             <option value="400">400 m</option>

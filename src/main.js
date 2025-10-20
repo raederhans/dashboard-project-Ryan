@@ -15,6 +15,7 @@ import { attachDistrictPopup } from './map/ui_popup_district.js';
 import * as turf from '@turf/turf';
 import { getTractsMerged } from './map/tracts_view.js';
 import { renderTractsChoropleth } from './map/render_choropleth_tracts.js';
+import { upsertSelectedDistrict, clearSelectedDistrict, upsertSelectedTract, clearSelectedTract } from './map/selection_layers.js';
 
 window.__dashboard = {
   setChoropleth: (/* future hook */) => {},
@@ -51,9 +52,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Wire points layer refresh with fixed 6-month filters for now
   wirePoints(map, { getFilters: () => store.getFilters() });
 
-  // Charts: guard until center is set
+  // Charts: guard until center is set or scope by district
   try {
-    const { start, end, types, center3857, radiusM } = store.getFilters();
+    const { start, end, types, center3857, radiusM, queryMode, selectedDistrictCode } = store.getFilters();
     const pane = document.getElementById('charts') || document.body;
     const status = document.getElementById('charts-status') || (() => {
       const d = document.createElement('div');
@@ -62,9 +63,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       pane.appendChild(d);
       return d;
     })();
-    if (center3857) {
+    if ((queryMode === 'buffer' && center3857) || queryMode === 'district') {
       status.textContent = '';
-      await updateAllCharts({ start, end, types, center3857, radiusM });
+      await updateAllCharts({ start, end, types, center3857, radiusM, queryMode, selectedDistrictCode });
     } else {
       status.textContent = 'Tip: click the map to set a center and show buffer-based charts.';
     }
@@ -81,24 +82,79 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Controls panel
+  let _tractClickWired = false;
+  let _districtClickWired = false;
   async function refreshAll() {
-    const { start, end, types } = store.getFilters();
+    const { start, end, types, queryMode, selectedDistrictCode, selectedTractGEOID } = store.getFilters();
     try {
       if (store.adminLevel === 'tracts') {
         const merged = await getTractsMerged({ per10k: store.per10k });
         const { breaks, colors } = renderTractsChoropleth(map, merged);
         drawLegend(breaks, colors, '#legend');
+        // maintain tract highlight based on selection
+        if (store.queryMode === 'tract' && selectedTractGEOID) {
+          upsertSelectedTract(map, selectedTractGEOID);
+        } else {
+          clearSelectedTract(map);
+        }
+        // wire click for tract selection once
+        if (!_tractClickWired && map.getLayer('tracts-fill')) {
+          _tractClickWired = true;
+          map.on('click', 'tracts-fill', (e) => {
+            try {
+              const f = e.features && e.features[0];
+              const tract = f?.properties?.TRACT_FIPS;
+              const state = f?.properties?.STATE_FIPS || f?.properties?.STATE;
+              const county = f?.properties?.COUNTY_FIPS || f?.properties?.COUNTY;
+              if (tract && state && county && store.queryMode === 'tract') {
+                const geoid = String(state) + String(county) + String(tract).padStart(6,'0');
+                store.selectedTractGEOID = geoid;
+                upsertSelectedTract(map, geoid);
+                // clear buffer overlay
+                removeBufferOverlay();
+                // charts follow tract MVP path
+                refreshAll();
+              }
+            } catch {}
+          });
+        }
       } else {
         const merged = await getDistrictsMerged({ start, end, types });
         const { breaks, colors } = renderDistrictChoropleth(map, merged);
         drawLegend(breaks, colors, '#legend');
+        // maintain district highlight based on selection
+        if (store.queryMode === 'district' && selectedDistrictCode) {
+          upsertSelectedDistrict(map, selectedDistrictCode);
+        } else {
+          clearSelectedDistrict(map);
+        }
+        // click to select district in selection mode (once)
+        if (!_districtClickWired && map.getLayer('districts-fill')) {
+          _districtClickWired = true;
+          map.on('click', 'districts-fill', (e) => {
+            const f = e.features && e.features[0];
+            const code = (f?.properties?.DIST_NUMC || '').toString().padStart(2,'0');
+            if (store.queryMode === 'district' && code) {
+              store.selectedDistrictCode = code;
+              upsertSelectedDistrict(map, code);
+              removeBufferOverlay();
+              refreshAll();
+            }
+          });
+        }
       }
     } catch (e) {
       console.warn('Boundary refresh failed:', e);
     }
 
-    if (store.center3857) {
-      refreshPoints(map, { start, end, types }).catch((e) => console.warn('Points refresh failed:', e));
+    if (queryMode === 'buffer') {
+      if (store.center3857) {
+        refreshPoints(map, { start, end, types, queryMode }).catch((e) => console.warn('Points refresh failed:', e));
+      } else {
+        try { const { clearCrimePoints } = await import('./map/points.js'); clearCrimePoints(map); } catch {}
+      }
+    } else if (queryMode === 'district') {
+      refreshPoints(map, { start, end, types, queryMode, selectedDistrictCode }).catch((e) => console.warn('Points refresh failed:', e));
     } else {
       try { const { clearCrimePoints } = await import('./map/points.js'); clearCrimePoints(map); } catch {}
     }
@@ -146,7 +202,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   map.on('click', (e) => {
-    if (store.selectMode === 'point') {
+    if (store.queryMode === 'buffer' && store.selectMode === 'point') {
       const lngLat = [e.lngLat.lng, e.lngLat.lat];
       store.centerLonLat = lngLat;
       store.setCenterFromLngLat(e.lngLat.lng, e.lngLat.lat);
@@ -170,5 +226,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   // react to radius changes
   const radiusObserver = new MutationObserver(() => updateBuffer());
   radiusObserver.observe(document.documentElement, { attributes: false, childList: false, subtree: false });
+
+  function removeBufferOverlay() {
+    for (const id of ['buffer-a-fill','buffer-a-line']) { if (map.getLayer(id)) try { map.removeLayer(id); } catch {} }
+    if (map.getSource('buffer-a')) try { map.removeSource('buffer-a'); } catch {}
+  }
 });
 

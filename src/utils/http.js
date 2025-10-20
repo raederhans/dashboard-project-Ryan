@@ -73,10 +73,11 @@ export async function fetchJson(url, { timeoutMs = 15000, retries = 2, cacheTTL 
   const cacheKey = `cache:${hashKey(keyBase)}`;
 
   // memory/session cache
+  const dev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
   const mem = lruGet(cacheKey);
-  if (mem != null) return mem;
+  if (mem != null) { if (dev) console.log(`cache HIT: ${cacheKey}`); return mem; }
   const ss = ssGet(cacheKey);
-  if (ss != null) { lruSet(cacheKey, ss, cacheTTL); return ss; }
+  if (ss != null) { if (dev) console.log(`cache HIT(session): ${cacheKey}`); lruSet(cacheKey, ss, cacheTTL); return ss; }
 
   if (inflight.has(cacheKey)) return inflight.get(cacheKey);
 
@@ -96,6 +97,7 @@ export async function fetchJson(url, { timeoutMs = 15000, retries = 2, cacheTTL 
         const data = await res.json();
         lruSet(cacheKey, data, cacheTTL);
         ssSet(cacheKey, data, cacheTTL);
+        if (dev) console.log(`cache MISS: ${cacheKey}`);
         return data;
       } catch (e) {
         const last = attempt === total - 1;
