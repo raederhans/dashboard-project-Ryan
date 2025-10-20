@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-20 18:43 — About Panel Added ✅
+
+**Status:** ✅ Collapsible info panel with smooth animation
+
+### New Features
+- ✅ **About Button:** Top-right `?` button (28px circle, z-index 1200)
+- ✅ **Slide Animation:** 250ms ease transition (`translateY(-100%)` → `0`)
+- ✅ **Content Sections:** Purpose, How to use, Data sources, Important notes
+- ✅ **Keyboard Support:** Esc key closes panel
+- ✅ **Accessibility:** ARIA attributes (`aria-expanded`, `aria-hidden`, `role="dialog"`)
+- ✅ **Responsive:** Mobile-friendly (full-width, reduced padding on small screens)
+
+### Implementation Details
+- **New module:** `src/ui/about.js` — Panel initialization, styles injection, event handlers
+- **Integration:** `src/main.js` — Import and call `initAboutPanel()` in map.on('load')
+
+### Logs
+- Acceptance: [logs/about_accept_20251020_184353.md](../logs/about_accept_20251020_184353.md)
+
+---
+
+## 2025-10-20 18:41 — Drilldown (Child Offense Codes) COMPLETE ✅
+
+**Status:** ✅ All acceptance criteria met — End-to-end drilldown pipeline implemented
+
+### New Features
+- ✅ **Time-Window Filtering:** Drilldown list shows only codes with incidents in current `[start, end)` window
+- ✅ **Drilldown Override:** Selected drilldown codes take precedence over parent group expansion
+- ✅ **API Integration:** `fetchAvailableCodesForGroups()` queries CARTO for available codes (60s cache)
+- ✅ **Empty States:** Hints for no groups, no codes in window, API errors
+- ✅ **Consistent Filtering:** Drilldown applies to points, districts choropleth, monthly line, Top-N, 7×24 heatmap
+
+### Implementation Details
+- **New API:** `src/api/crime.js` — `fetchAvailableCodesForGroups({ start, end, groups })`
+- **State:** `src/state/store.js` — Added `selectedDrilldownCodes[]`, updated `getFilters()` to return drilldownCodes
+- **SQL:** `src/utils/sql.js` — All 8 builders accept and use `drilldownCodes` (overrides `types` when present)
+- **UI:** `src/ui/panel.js` — Async group handler calls API, drilldown handler updates `selectedDrilldownCodes`
+
+### Behavioral Changes
+- **Before:** Drilldown showed all codes for groups (not filtered by time), overwrote `selectedTypes` directly
+- **After:** Drilldown filtered by time window, stored separately, overrides parent groups in SQL
+
+### Logs
+- Audit: [logs/drilldown_audit_20251020_183620.md](../logs/drilldown_audit_20251020_183620.md)
+- Acceptance: [logs/drilldown_accept_20251020_184113.md](../logs/drilldown_accept_20251020_184113.md)
+
+---
+
+## 2025-10-20 18:34 — Legend Relocated to Bottom-Right ✅
+
+**Status:** ✅ Fixed overlap with compare card
+
+### Changes
+- **Position:** Moved from bottom-left to bottom-right (`left: 12px` → `right: 12px`)
+- **Z-Index:** Increased from 10 to 1010 (stays above compare card z-index 18)
+- **Mobile:** Added media query to nudge legend up (`bottom: 72px` on screens ≤768px)
+- **Visual:** Slightly increased padding, border-radius, updated shadow
+
+### Implementation
+- **File:** `index.html` — Updated `#legend` CSS (lines 11-20)
+
+### Logs
+- Details: [logs/legend_move_20251020_183459.md](../logs/legend_move_20251020_183459.md)
+
+---
+
 ## 2025-10-20 17:44 — Census Tracts Implementation COMPLETE ✅
 
 **Status:** ✅ All acceptance criteria met

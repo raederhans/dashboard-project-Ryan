@@ -69,10 +69,10 @@ export function envelopeClause(bbox) {
  * @param {number[] | {xmin:number, ymin:number, xmax:number, ymax:number}} [params.bbox] - Bounding box in EPSG:3857.
  * @returns {string} SQL statement.
  */
-export function buildCrimePointsSQL({ start, end, types, bbox, dc_dist }) {
+export function buildCrimePointsSQL({ start, end, types, bbox, dc_dist, drilldownCodes }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
 
   const bboxClause = envelopeClause(bbox);
   if (bboxClause) {
@@ -97,10 +97,10 @@ export function buildCrimePointsSQL({ start, end, types, bbox, dc_dist }) {
  * @param {string[]} [params.types] - Optional offense filters.
  * @returns {string} SQL statement.
  */
-export function buildMonthlyCitySQL({ start, end, types, dc_dist }) {
+export function buildMonthlyCitySQL({ start, end, types, dc_dist, drilldownCodes }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
   if (dc_dist) clauses.push(`  ${buildDistrictFilter(dc_dist)}`);
 
   return [
@@ -127,10 +127,11 @@ export function buildMonthlyBufferSQL({
   types,
   center3857,
   radiusM,
+  drilldownCodes,
 }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
   clauses.push(`  ${dWithinClause(center3857, radiusM)}`);
 
   return [
@@ -191,10 +192,11 @@ export function buildHeatmap7x24SQL({
   types,
   center3857,
   radiusM,
+  drilldownCodes,
 }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
   clauses.push(`  ${dWithinClause(center3857, radiusM)}`);
 
   return [
@@ -215,10 +217,10 @@ export function buildHeatmap7x24SQL({
  * @param {string[]} [params.types] - Optional offense filters.
  * @returns {string} SQL statement.
  */
-export function buildByDistrictSQL({ start, end, types }) {
+export function buildByDistrictSQL({ start, end, types, drilldownCodes }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, "end");
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
 
   return [
     "SELECT dc_dist, COUNT(*) AS n",
@@ -232,10 +234,10 @@ export function buildByDistrictSQL({ start, end, types }) {
  * Top types for a given district code.
  * @param {{start:string,end:string,types?:string[],dc_dist:string,limit?:number}} p
  */
-export function buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit = 5 }) {
+export function buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit = 5, drilldownCodes }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, 'end');
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
   const dist = String(dc_dist).padStart(2, '0').replace(/'/g, "''");
   clauses.push(`  AND dc_dist = '${dist}'`);
   return [
@@ -250,10 +252,10 @@ export function buildTopTypesDistrictSQL({ start, end, types, dc_dist, limit = 5
  * 7x24 heatmap aggregates filtered by district code.
  * @param {{start:string,end:string,types?:string[],dc_dist:string}} p
  */
-export function buildHeatmap7x24DistrictSQL({ start, end, types, dc_dist }) {
+export function buildHeatmap7x24DistrictSQL({ start, end, types, dc_dist, drilldownCodes }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, 'end');
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
   const dist = String(dc_dist).padStart(2, '0').replace(/'/g, "''");
   clauses.push(`  AND dc_dist = '${dist}'`);
   return [
@@ -284,10 +286,10 @@ export function buildDistrictFilter(districtCode) {
  * @param {number} params.radiusM
  * @returns {string}
  */
-export function buildCountBufferSQL({ start, end, types, center3857, radiusM }) {
+export function buildCountBufferSQL({ start, end, types, center3857, radiusM, drilldownCodes }) {
   const startIso = dateFloorGuard(start);
   const endIso = ensureIso(end, 'end');
-  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const clauses = baseTemporalClauses(startIso, endIso, types, { drilldownCodes });
   clauses.push(`  ${dWithinClause(center3857, radiusM)}`);
   return [
     "SELECT COUNT(*) AS n",
@@ -350,7 +352,7 @@ function dWithinClause(center, radius) {
   return `AND ST_DWithin(the_geom, ST_SetSRID(ST_Point(${x}, ${y}), 3857), ${distance})`;
 }
 
-function baseTemporalClauses(startIso, endIso, types, { includeTypes = true } = {}) {
+function baseTemporalClauses(startIso, endIso, types, { includeTypes = true, drilldownCodes } = {}) {
   const clauses = [
     "WHERE dispatch_date_time >= '2015-01-01'",
     `  AND dispatch_date_time >= '${startIso}'`,
@@ -358,7 +360,9 @@ function baseTemporalClauses(startIso, endIso, types, { includeTypes = true } = 
   ];
 
   if (includeTypes) {
-    const sanitizedTypes = sanitizeTypes(types);
+    // Drilldown codes override parent group types
+    const codes = (drilldownCodes && drilldownCodes.length > 0) ? drilldownCodes : types;
+    const sanitizedTypes = sanitizeTypes(codes);
     if (sanitizedTypes.length > 0) {
       clauses.push(
         `  AND text_general_code IN (${sanitizedTypes

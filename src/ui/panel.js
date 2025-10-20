@@ -1,4 +1,5 @@
 import { expandGroupsToCodes, getCodesForGroups } from '../utils/types.js';
+import { fetchAvailableCodesForGroups } from '../api/crime.js';
 
 function debounce(fn, wait = 300) {
   let t;
@@ -34,8 +35,10 @@ export function initPanel(store, handlers) {
   const preset12 = document.getElementById('preset12');
 
   const onChange = debounce(() => {
-    // Derive selected offense codes from groups
-    store.selectedTypes = expandGroupsToCodes(store.selectedGroups || []);
+    // Derive selected offense codes from groups (unless drilldown overrides)
+    if (!store.selectedDrilldownCodes || store.selectedDrilldownCodes.length === 0) {
+      store.selectedTypes = expandGroupsToCodes(store.selectedGroups || []);
+    }
     handlers.onChange?.();
   }, 300);
 
@@ -71,16 +74,38 @@ export function initPanel(store, handlers) {
     onChange();
   });
 
-  groupSel?.addEventListener('change', () => {
+  groupSel?.addEventListener('change', async () => {
     const values = Array.from(groupSel.selectedOptions).map((o) => o.value);
     store.selectedGroups = values;
-    // populate drilldown options
+    store.selectedDrilldownCodes = []; // Clear drilldown when parent groups change
+
+    // populate drilldown options (filtered by time window availability)
     if (fineSel) {
-      const codes = getCodesForGroups(values);
-      fineSel.innerHTML = '';
-      for (const c of codes) {
-        const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c; fineSel.appendChild(opt);
+      if (values.length === 0) {
+        // No parent groups selected
+        fineSel.innerHTML = '<option disabled>Select a group first</option>';
+        fineSel.disabled = true;
+      } else {
+        fineSel.disabled = false;
+        fineSel.innerHTML = '<option disabled>Loading...</option>';
+
+        try {
+          const { start, end } = store.getStartEnd();
+          const availableCodes = await fetchAvailableCodesForGroups({ start, end, groups: values });
+
+          fineSel.innerHTML = '';
+          if (availableCodes.length === 0) {
+            fineSel.innerHTML = '<option disabled>No sub-codes in this window</option>';
+          } else {
+            for (const c of availableCodes) {
+              const opt = document.createElement('option');
+              opt.value = c; opt.textContent = c; fineSel.appendChild(opt);
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to fetch available codes:', err);
+          fineSel.innerHTML = '<option disabled>Error loading codes</option>';
+        }
       }
     }
     onChange();
@@ -88,7 +113,7 @@ export function initPanel(store, handlers) {
 
   fineSel?.addEventListener('change', () => {
     const codes = Array.from(fineSel.selectedOptions).map((o) => o.value);
-    store.selectedTypes = codes; // override when present
+    store.selectedDrilldownCodes = codes; // Drilldown overrides parent groups
     onChange();
   });
 
@@ -168,6 +193,12 @@ export function initPanel(store, handlers) {
   if (queryModeSel) queryModeSel.value = store.queryMode || 'buffer';
   if (startMonth && store.startMonth) startMonth.value = store.startMonth;
   if (durationSel) durationSel.value = String(store.durationMonths || 6);
+
+  // Initialize drilldown select (disabled until groups are selected)
+  if (fineSel) {
+    fineSel.innerHTML = '<option disabled>Select a group first</option>';
+    fineSel.disabled = true;
+  }
 
   applyModeUI();
 

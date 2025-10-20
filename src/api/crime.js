@@ -1,6 +1,7 @@
 import { CARTO_SQL_BASE } from "../config.js";
 import { fetchJson, logQuery } from "../utils/http.js";
 import * as Q from "../utils/sql.js";
+import { expandGroupsToCodes } from "../utils/types.js";
 
 /**
  * Fetch crime point features for Map A.
@@ -198,4 +199,48 @@ export async function fetchCountBuffer({ start, end, types, center3857, radiusM 
   const rows = json?.rows;
   const n = Array.isArray(rows) && rows.length > 0 ? Number(rows[0]?.n) || 0 : 0;
   return n;
+}
+
+/**
+ * Fetch available offense codes for selected groups within time window.
+ * Only returns codes that have at least 1 incident in [start, end).
+ * @param {{start:string,end:string,groups:string[]}} params
+ * @returns {Promise<string[]>} Alphabetized array of available codes
+ */
+export async function fetchAvailableCodesForGroups({ start, end, groups }) {
+  if (!Array.isArray(groups) || groups.length === 0) {
+    return [];
+  }
+
+  // Expand group keys to offense codes
+  const expandedCodes = expandGroupsToCodes(groups);
+  if (expandedCodes.length === 0) {
+    return [];
+  }
+
+  // Build SQL to get distinct codes with incidents in time window
+  const startIso = Q.dateFloorGuard(start);
+  const endIso = start; // Use raw value for end (ensured in sanitizeTypes)
+  const sanitized = Q.sanitizeTypes(expandedCodes);
+  const codeList = sanitized.map((c) => `'${c}'`).join(', ');
+
+  const sql = [
+    'SELECT DISTINCT text_general_code',
+    'FROM incidents_part1_part2',
+    `WHERE dispatch_date_time >= '${startIso}'`,
+    `  AND dispatch_date_time < '${endIso}'`,
+    `  AND text_general_code IN (${codeList})`,
+    'ORDER BY text_general_code',
+  ].join('\n');
+
+  await logQuery('fetchAvailableCodesForGroups', sql);
+  const json = await fetchJson(CARTO_SQL_BASE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `q=${encodeURIComponent(sql)}`,
+    cacheTTL: 60_000, // 60s cache
+  });
+
+  const rows = json?.rows || [];
+  return rows.map((r) => r.text_general_code).filter(Boolean);
 }

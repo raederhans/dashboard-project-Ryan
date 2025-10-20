@@ -30,6 +30,7 @@ export const store = /** @type {Store} */ ({
   durationMonths: 6,
   selectedGroups: [],
   selectedTypes: [],
+  selectedDrilldownCodes: [], // Child offense codes (overrides parent groups when set)
   adminLevel: 'districts',
   selectMode: 'idle',
   centerLonLat: null,
@@ -61,6 +62,7 @@ export const store = /** @type {Store} */ ({
       start,
       end,
       types,
+      drilldownCodes: this.selectedDrilldownCodes || [],
       center3857: this.center3857,
       radiusM: this.radius,
       queryMode: this.queryMode,

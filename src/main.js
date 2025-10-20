@@ -9,6 +9,7 @@ import { wirePoints } from './map/wire_points.js';
 import { updateAllCharts } from './charts/index.js';
 import { store, initCoverageAndDefaults } from './state/store.js';
 import { initPanel } from './ui/panel.js';
+import { initAboutPanel } from './ui/about.js';
 import { refreshPoints } from './map/points.js';
 import { updateCompare } from './compare/card.js';
 import { attachDistrictPopup } from './map/ui_popup_district.js';
@@ -45,6 +46,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     map.on('load', async () => {
       // Initialize legend control
       initLegend();
+
+      // Initialize about panel (top slide-down)
+      initAboutPanel();
 
       // Render districts (legend updated inside)
       renderDistrictChoropleth(map, merged);
