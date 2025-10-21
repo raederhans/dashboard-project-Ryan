@@ -203,7 +203,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  initPanel(store, { onChange: refreshAll, getMapCenter: () => map.getCenter() });
+  initPanel(store, {
+    onChange: refreshAll,
+    getMapCenter: () => map.getCenter(),
+    onTractsOverlayToggle: (visible) => {
+      const layer = map.getLayer('tracts-outline-line');
+      if (layer) {
+        map.setLayoutProperty('tracts-outline-line', 'visibility', visible ? 'visible' : 'none');
+      }
+    },
+  });
 
   // Selection mode: click to set A and update buffer circle
   function updateBuffer() {

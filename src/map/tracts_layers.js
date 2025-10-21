@@ -28,8 +28,11 @@ export function upsertTractsOutline(map, fc) {
 
   // Add line layer if not present
   if (!map.getLayer(layerId)) {
-    // Insert above districts-fill, below districts-line (if they exist)
-    let beforeId = 'districts-line'; // Try to place before district lines
+    // Insert above districts-fill, below districts-label (correct z-order)
+    let beforeId = 'districts-label'; // Try to place before district labels
+    if (!map.getLayer(beforeId)) {
+      beforeId = 'districts-line'; // Fallback: before district lines
+    }
     if (!map.getLayer(beforeId)) {
       beforeId = 'clusters'; // Fallback: before clusters/points
     }

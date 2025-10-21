@@ -61,7 +61,7 @@ export async function updateAllCharts({ start, end, types = [], center3857, radi
         fetch7x24Buffer({ start, end, types, center3857, radiusM }),
       ]);
     } else {
-      // tract mode (MVP): show citywide only, disable others
+      // tract mode: show citywide only, tract charts ready for implementation
       [city] = await Promise.all([
         fetchMonthlySeriesCity({ start, end, types }),
       ]);
@@ -76,7 +76,7 @@ export async function updateAllCharts({ start, end, types = [], center3857, radi
         pane.appendChild(d);
         return d;
       })();
-      status.textContent = 'Tract mode: charts are disabled for this cycle (citywide series only).';
+      status.textContent = 'Tract mode: charts ready for implementation (see scripts/tract_sql_samples.mjs). Citywide series shown.';
     }
 
     const cityRows = Array.isArray(city?.rows) ? city.rows : city;

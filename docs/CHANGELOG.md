@@ -2,6 +2,139 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-20 22:24 — Tract Charts Stubs + Tract Overlay Toggle (P1) ✅
+
+**Status:** ✅ Task C complete — Tract chart entry points staged for implementation
+
+### Task C: Tract Charts Entry Points (Stubs)
+Created infrastructure for future tract-level chart implementation:
+
+**New Files**:
+- **[scripts/tract_sql_samples.mjs](../scripts/tract_sql_samples.mjs)** — Sample SQL queries demonstrating ST_Intersects pattern (monthly, topN, 7x24)
+- **[logs/TRACT_SQL_2025-10-21T0224.log](../logs/TRACT_SQL_2025-10-21T0224.log)** — Generated SQL samples with implementation notes
+
+**Stub Functions Added**:
+- [src/utils/sql.js](../src/utils/sql.js) — Lines 378-427: `buildMonthlyTractSQL`, `buildTopTypesTractSQL`, `buildHeatmap7x24TractSQL`
+- [src/api/crime.js](../src/api/crime.js) — Lines 248-300: `fetchMonthlySeriesTract`, `fetchTopTypesTract`, `fetch7x24Tract`
+- [src/charts/index.js](../src/charts/index.js) — Line 79: Updated tract mode message to "ready for implementation"
+
+**Implementation Strategy**: Client-side geometry embedding (load GeoJSON, extract polygon, embed in ST_Intersects query)
+**Estimated Effort**: ~2 hours (see logs/TRACT_SQL_2025-10-21T0224.log)
+
+---
+
+## 2025-10-20 22:22 — Tract Overlay Toggle Restored (P1) ✅
+
+**Status:** ✅ Task B complete — Census tract boundaries now toggleable with correct z-order
+
+### Task B: Census Tract Overlay Feature
+Restored and hardened tract boundary overlays with three-scenario support:
+
+**Implementation**:
+- **Toggle Control**: Added "Show tracts overlay" checkbox in control panel ([index.html](../index.html) lines 89-94)
+- **State Management**: Added `overlayTractsLines` boolean to [src/state/store.js](../src/state/store.js) line 46
+- **Event Wiring**: Panel checkbox syncs with layer visibility ([src/ui/panel.js](../src/ui/panel.js) lines 131-134, 202)
+- **Handler**: [src/main.js](../src/main.js) lines 209-213 — `onTractsOverlayToggle` updates MapLibre layer visibility
+- **Z-Order Fix**: [src/map/tracts_layers.js](../src/map/tracts_layers.js) lines 31-41 — Corrected insertion to `beforeId = 'districts-label'`
+
+**Correct Layer Stack** (bottom → top):
+1. districts-fill (choropleth colors)
+2. **tracts-outline-line** (0.5px gray, toggleable)
+3. districts-line (1px dark boundaries)
+4. districts-label (codes/names)
+
+**Three Scenarios**:
+- **District only**: Unchecked (default) → tracts hidden
+- **District + overlay**: Checked → tracts visible as fine-grained grid
+- **Tract only**: Tracts always visible (overlay toggle irrelevant)
+
+**GeoJSON Data**: public/data/tracts_phl.geojson (1.4 MB, 408 features) ✅ Verified
+
+**Logs**: [logs/TRACTS_OVERLAY_ACCEPT_20251020_222234.md](../logs/TRACTS_OVERLAY_ACCEPT_20251020_222234.md)
+
+---
+
+## 2025-10-20 22:01 — P0 Drilldown Bug Fixed ✅
+
+**Status:** ✅ Critical bug patched — Drilldown list now functional
+
+### Fix Applied
+- **Issue**: Drilldown list always returned empty (zero rows) regardless of offense groups or time window selected
+- **Root Cause**: Typo in [src/api/crime.js:223](../src/api/crime.js#L223) — `endIso = start` instead of `end`, creating zero-length time window
+- **Fix**: One-line change: `const endIso = end;`
+- **Impact**: Feature now 100% functional (was 0% before)
+
+### Verification
+- Build: ✅ SUCCESS (472 modules, 3.93s)
+- Preview: ✅ Server responds 200 OK
+- SQL: ✅ Now generates correct time window predicate
+- Logs: [logs/DRILLDOWN_FIX_20251020_215817.md](../logs/DRILLDOWN_FIX_20251020_215817.md), [logs/build_20251020_220132.log](../logs/build_20251020_220132.log), [logs/preview_http_20251020_220132.log](../logs/preview_http_20251020_220132.log)
+
+### Files Modified
+- [src/api/crime.js](../src/api/crime.js) — Line 223 (1 character change)
+
+---
+
+## 2025-10-20 19:44 — Manager Audit: Three User-Visible Issues Diagnosed 📋
+
+**Status:** 🔍 Diagnosis complete, ready for Codex implementation
+
+### Issues Audited
+
+1. **Drilldown Empty List (P0 — Critical Bug)**
+   - **Symptom**: Drilldown list always shows "No sub-codes in this window" even with valid offense groups and time window
+   - **Root Cause**: Typo in [src/api/crime.js:223](../src/api/crime.js#L223) — `endIso = start` instead of `end`, creating zero-length time window
+   - **Impact**: Feature completely broken, 0% success rate
+   - **Fix Effort**: 1 minute (1-character change)
+   - **Diagnosis Log**: [logs/DRILLDOWN_DIAG_20251020_194408.md](../logs/DRILLDOWN_DIAG_20251020_194408.md)
+   - **Fix Plan**: [docs/DRILLDOWN_FIX_PLAN.md](../docs/DRILLDOWN_FIX_PLAN.md)
+
+2. **Tract Charts Disabled (P1 — Feature Gap)**
+   - **Symptom**: Tract mode shows "charts are disabled" message, only citywide series visible
+   - **Root Cause**: No polygon-based SQL queries implemented for tract geometry intersection
+   - **Solution**: Live SQL with `ST_Intersects` (Option 1, recommended) or precomputed aggregations (Option 2)
+   - **Fix Effort**: 1.5-2 hours for Option 1 (3 SQL builders, 3 API wrappers, chart wiring)
+   - **Plan**: [docs/TRACTS_CHARTS_PLAN.md](../docs/TRACTS_CHARTS_PLAN.md)
+
+3. **Charts Panel Cramped (P2 — UX Issue)**
+   - **Symptom**: Fixed pixel heights (140/160/180px) cause cramped layout on 768p displays, potential scrollbars
+   - **Root Cause**: No responsive height strategy, canvas elements use fixed `height` attributes
+   - **Solution**: CSS Grid with flex-basis percentages + min/max constraints (Option A, recommended) or JavaScript height calc (Option B)
+   - **Fix Effort**: 20-35 minutes for Option A (CSS only)
+   - **Plan**: [docs/CHARTS_RESPONSIVE_PLAN.md](../docs/CHARTS_RESPONSIVE_PLAN.md)
+
+### Deliverables Created
+
+**Logs**:
+- [logs/DRILLDOWN_DIAG_20251020_194408.md](../logs/DRILLDOWN_DIAG_20251020_194408.md) — Root cause analysis with SQL evidence
+
+**Fix Plans (Codex-Ready)**:
+- [docs/DRILLDOWN_FIX_PLAN.md](../docs/DRILLDOWN_FIX_PLAN.md) — P0 fix + P1/P2 enhancements, 5 acceptance tests
+- [docs/TRACTS_CHARTS_PLAN.md](../docs/TRACTS_CHARTS_PLAN.md) — Two implementation options with sample SQL, 5 acceptance tests
+- [docs/CHARTS_RESPONSIVE_PLAN.md](../docs/CHARTS_RESPONSIVE_PLAN.md) — CSS Grid strategy with media queries, 5 acceptance tests
+
+**TODO Updates**:
+- [docs/TODO.md](../docs/TODO.md) — Added 3 tasks: DATA-drilldown, CHARTS-tracts, CHARTS-responsive
+
+### Files Analyzed (Read-Only)
+
+- src/ui/panel.js — Drilldown UI handlers
+- src/api/crime.js — fetchAvailableCodesForGroups (buggy line identified)
+- src/state/store.js — Time window calculation (working correctly)
+- src/utils/http.js — Cache behavior (60s TTL, LRU + sessionStorage)
+- src/charts/index.js — Tract mode short-circuit
+- index.html — Charts container structure (fixed heights)
+
+### Next Actions for Codex
+
+1. **Immediate (P0)**: Fix drilldown typo in crime.js:223 (`endIso = end`)
+2. **High Priority (P1)**: Implement tract charts with live SQL (Option 1)
+3. **Medium Priority (P2)**: Add responsive charts CSS Grid
+
+**Estimated Total Effort**: ~2-3 hours for all three fixes
+
+---
+
 ## 2025-10-20 18:43 — About Panel Added ✅
 
 **Status:** ✅ Collapsible info panel with smooth animation

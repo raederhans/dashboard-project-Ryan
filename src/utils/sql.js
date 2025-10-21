@@ -374,3 +374,54 @@ function baseTemporalClauses(startIso, endIso, types, { includeTypes = true, dri
 
   return clauses;
 }
+
+/**
+ * Build monthly time series SQL for a single census tract (STUB).
+ * @param {object} params
+ * @param {string} params.start - ISO date
+ * @param {string} params.end - ISO date
+ * @param {string[]} params.types - Offense codes
+ * @param {string} params.tractGEOID - 11-digit census tract GEOID
+ * @param {object} params.tractGeometry - GeoJSON geometry object
+ * @returns {string} SQL query
+ * @throws {Error} Not yet implemented
+ */
+export function buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry }) {
+  // TODO: Implement using ST_Intersects pattern from scripts/tract_sql_samples.mjs
+  // See Sample 1: Monthly Time Series
+  throw new Error(`Tract charts not yet implemented (stub). Requested: monthly series for tract ${tractGEOID}`);
+}
+
+/**
+ * Build top N offense types SQL for a census tract (STUB).
+ * @param {object} params
+ * @param {string} params.start - ISO date
+ * @param {string} params.end - ISO date
+ * @param {string} params.tractGEOID - 11-digit census tract GEOID
+ * @param {object} params.tractGeometry - GeoJSON geometry object
+ * @param {number} [params.limit=12] - Max results
+ * @returns {string} SQL query
+ * @throws {Error} Not yet implemented
+ */
+export function buildTopTypesTractSQL({ start, end, tractGEOID, tractGeometry, limit = 12 }) {
+  // TODO: Implement using pattern from scripts/tract_sql_samples.mjs
+  // See Sample 2: Top N Offense Types
+  throw new Error(`Tract charts not yet implemented (stub). Requested: top ${limit} types for tract ${tractGEOID}`);
+}
+
+/**
+ * Build 7x24 heatmap SQL for a census tract (STUB).
+ * @param {object} params
+ * @param {string} params.start - ISO date
+ * @param {string} params.end - ISO date
+ * @param {string[]} params.types - Offense codes
+ * @param {string} params.tractGEOID - 11-digit census tract GEOID
+ * @param {object} params.tractGeometry - GeoJSON geometry object
+ * @returns {string} SQL query
+ * @throws {Error} Not yet implemented
+ */
+export function buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry }) {
+  // TODO: Implement using pattern from scripts/tract_sql_samples.mjs
+  // See Sample 3: 7x24 Heatmap (Day-of-Week × Hour)
+  throw new Error(`Tract charts not yet implemented (stub). Requested: 7x24 heatmap for tract ${tractGEOID}`);
+}

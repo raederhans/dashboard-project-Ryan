@@ -220,7 +220,7 @@ export async function fetchAvailableCodesForGroups({ start, end, groups }) {
 
   // Build SQL to get distinct codes with incidents in time window
   const startIso = Q.dateFloorGuard(start);
-  const endIso = start; // Use raw value for end (ensured in sanitizeTypes)
+  const endIso = end; // FIX: use the computed end (was: start, creating zero-length window)
   const sanitized = Q.sanitizeTypes(expandedCodes);
   const codeList = sanitized.map((c) => `'${c}'`).join(', ');
 
@@ -243,4 +243,58 @@ export async function fetchAvailableCodesForGroups({ start, end, groups }) {
 
   const rows = json?.rows || [];
   return rows.map((r) => r.text_general_code).filter(Boolean);
+}
+
+/**
+ * Fetch monthly time series for a census tract (STUB).
+ * @param {object} params
+ * @param {string} params.start - ISO date
+ * @param {string} params.end - ISO date
+ * @param {string[]} params.types - Offense codes
+ * @param {string} params.tractGEOID - 11-digit census tract GEOID
+ * @returns {Promise<{rows: Array<{m: string, n: number}>}>}
+ * @throws {Error} Not yet implemented
+ */
+export async function fetchMonthlySeriesTract({ start, end, types, tractGEOID }) {
+  // TODO: Load tract geometry from tracts_phl.geojson, call buildMonthlyTractSQL, fetchJson
+  // Implementation steps:
+  // 1. Fetch /public/data/tracts_phl.geojson (or use cached version from main.js)
+  // 2. Find feature where properties.GEOID === tractGEOID
+  // 3. Extract feature.geometry (GeoJSON polygon)
+  // 4. Call buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry })
+  // 5. POST to CARTO_SQL_BASE with SQL query
+  // 6. Return { rows: [...] }
+  throw new Error(`Tract charts not yet implemented (stub). Requested: monthly series for tract ${tractGEOID}`);
+}
+
+/**
+ * Fetch top N offense types for a census tract (STUB).
+ * @param {object} params
+ * @param {string} params.start - ISO date
+ * @param {string} params.end - ISO date
+ * @param {string} params.tractGEOID - 11-digit census tract GEOID
+ * @param {number} [params.limit=12] - Max results
+ * @returns {Promise<{rows: Array<{text_general_code: string, n: number}>}>}
+ * @throws {Error} Not yet implemented
+ */
+export async function fetchTopTypesTract({ start, end, tractGEOID, limit = 12 }) {
+  // TODO: Similar pattern to fetchMonthlySeriesTract
+  // Call buildTopTypesTractSQL({ start, end, tractGEOID, tractGeometry, limit })
+  throw new Error(`Tract charts not yet implemented (stub). Requested: top ${limit} types for tract ${tractGEOID}`);
+}
+
+/**
+ * Fetch 7x24 heatmap (day-of-week × hour) for a census tract (STUB).
+ * @param {object} params
+ * @param {string} params.start - ISO date
+ * @param {string} params.end - ISO date
+ * @param {string[]} params.types - Offense codes
+ * @param {string} params.tractGEOID - 11-digit census tract GEOID
+ * @returns {Promise<{rows: Array<{dow: number, hr: number, n: number}>}>}
+ * @throws {Error} Not yet implemented
+ */
+export async function fetch7x24Tract({ start, end, types, tractGEOID }) {
+  // TODO: Similar pattern to fetchMonthlySeriesTract
+  // Call buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry })
+  throw new Error(`Tract charts not yet implemented (stub). Requested: 7x24 heatmap for tract ${tractGEOID}`);
 }

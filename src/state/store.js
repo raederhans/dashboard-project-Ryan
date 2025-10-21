@@ -43,6 +43,7 @@ export const store = /** @type {Store} */ ({
   queryMode: 'buffer', // 'buffer' | 'district' | 'tract'
   selectedDistrictCode: null,
   selectedTractGEOID: null,
+  overlayTractsLines: false, // Show tract boundaries overlay in district mode
   getStartEnd() {
     if (this.startMonth && this.durationMonths) {
       const startD = dayjs(`${this.startMonth}-01`).startOf('month');

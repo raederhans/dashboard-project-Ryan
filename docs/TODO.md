@@ -2,45 +2,76 @@
 
 ## Pending
 
+### Critical Bugs (Manager Audit Batch â€” 2025-10-20)
+
+ - [ ] **DATA-drilldown**: Fix drilldown empty list bug (P0) - Critical typo in crime.js:223 sets `endIso = start` instead of `end`, creating zero-length time window. Drilldown list always shows "No sub-codes in this window" regardless of data.
+   - **Root Cause**: [logs/DRILLDOWN_DIAG_20251020_194408.md](../logs/DRILLDOWN_DIAG_20251020_194408.md)
+   - **Fix Plan**: [DRILLDOWN_FIX_PLAN.md](DRILLDOWN_FIX_PLAN.md)
+   - **Acceptance**:
+     - Select "Vehicle" group â†’ Drilldown populates with 2 codes ("Motor Vehicle Theft", "Theft from Vehicle")
+     - Select "Motor Vehicle Theft" â†’ Map/charts filter to MVT only (not all vehicle crimes)
+     - Empty window shows helpful hint: "Try expanding time range"
+     - All 5 acceptance tests pass
+
+ - [ ] **CHARTS-tracts**: Enable tract-level charts with live SQL (P1) - Tract mode currently shows citywide-only series, charts disabled. Implement polygon intersection queries to enable monthly/topN/7Ã—24 charts for selected tract.
+   - **Plan**: [TRACTS_CHARTS_PLAN.md](TRACTS_CHARTS_PLAN.md)
+   - **Implementation**: Option 1 (Live SQL with `ST_Intersects`) â€” 3 new SQL builders, 3 API wrappers, update charts/index.js
+   - **Acceptance**:
+     - Click tract â†’ All 3 charts populate within 1-2s (monthly, topN, 7Ã—24)
+     - Time window changes â†’ Charts update to reflect new window
+     - Offense filters apply to tract charts
+     - Drilldown works with tract charts
+     - Empty tract shows zero/empty charts with helpful message
+
+ - [ ] **CHARTS-responsive**: Fix cramped chart heights on smaller viewports (P2) - Charts panel uses fixed pixel heights (140/160/180px), causing cramped layout on 768p displays and potential scrollbars. Implement CSS Grid with dynamic heights.
+   - **Plan**: [CHARTS_RESPONSIVE_PLAN.md](CHARTS_RESPONSIVE_PLAN.md)
+   - **Implementation**: CSS Grid with `flex-basis` percentages (30%/28%/32%), min/max height constraints, responsive breakpoints
+   - **Acceptance**:
+     - 768p display: Charts fit without scrollbar, no label truncation
+     - Window resize: Charts adjust height smoothly
+     - Mobile (â‰¤768px): Panel moves to bottom, charts stack vertically
+     - 1080p display: Charts use full 80vh, no excessive white space
+     - All chart labels readable, no overlap
+
 ### UX Enhancements
 
  - [ ] UX-usemap: Implement select-on-map mode for "Use Map Center" button (owner: dev) - Toggle button to enable crosshair cursor; click map to set buffer center; render marker A + orange circle overlay.
-   - Acceptance: Click "Select on Map" â†?cursor crosshair â†?click location â†?marker appears â†?circle renders â†?address input updates â†?mode exits
+   - Acceptance: Click "Select on Map" ï¿½?cursor crosshair ï¿½?click location ï¿½?marker appears ï¿½?circle renders ï¿½?address input updates ï¿½?mode exits
    - Test: Verify circle persists during pan/zoom; verify button text toggles; verify debounced refresh triggers
 
  - [ ] UX-radius: Add buffer circle visualization for radius selector (owner: dev) - Render orange circle at buffer center when radius changes; update circle geometry on dropdown change.
-   - Acceptance: Set buffer center â†?change radius to 800m â†?circle expands to 800m â†?change to 1600m â†?circle expands again
+   - Acceptance: Set buffer center ï¿½?change radius to 800m ï¿½?circle expands to 800m ï¿½?change to 1600m ï¿½?circle expands again
    - Test: Verify circle uses EPSG:4326 for Turf.js; verify MapLibre projects correctly; verify no flicker on update
 
  - [ ] UX-timewindow: Replace fixed "last N months" with start + duration model (owner: dev) - Add `<input type="month">` for start date; add preset buttons ("Last 3mo", etc.); update store.getStartEnd() logic.
-   - Acceptance: Leave start blank + select "Last 6mo" â†?queries use (today - 6mo) to today; Set start "2023-01" + duration "6" â†?queries use 2023-01-01 to 2023-07-01
-   - Test: Click "Last 3mo" preset â†?start input clears â†?duration becomes 3; verify SQL logs show correct date ranges
+   - Acceptance: Leave start blank + select "Last 6mo" ï¿½?queries use (today - 6mo) to today; Set start "2023-01" + duration "6" ï¿½?queries use 2023-01-01 to 2023-07-01
+   - Test: Click "Last 3mo" preset ï¿½?start input clears ï¿½?duration becomes 3; verify SQL logs show correct date ranges
 
  - [ ] UX-drilldown: Populate fine-grained codes dropdown dynamically from CARTO (owner: dev) - Query `SELECT DISTINCT text_general_code, COUNT(*) AS n WHERE text_general_code IN (...)` when groups selected; populate `#fineSel` with results.
-   - Acceptance: Select "Property Crimes" â†?drilldown shows "Loading..." â†?populates with codes ("THEFT (12,345)", "RETAIL THEFT (8,901)", ...); Select specific codes â†?map filters to those codes only
-   - Test: Deselect all groups â†?drilldown disables with "(select groups first)"; verify 60s cache TTL; verify loading spinner
+   - Acceptance: Select "Property Crimes" ï¿½?drilldown shows "Loading..." ï¿½?populates with codes ("THEFT (12,345)", "RETAIL THEFT (8,901)", ...); Select specific codes ï¿½?map filters to those codes only
+   - Test: Deselect all groups ï¿½?drilldown disables with "(select groups first)"; verify 60s cache TTL; verify loading spinner
 
  - [ ] BUG-group-blank: Fix offense group selection blanking map (owner: dev) - Run `node scripts/audit_offense_codes.js` to query CARTO for canonical text_general_code values; update offenseGroups in types.js or offense_groups.json with exact matches.
-   - Acceptance: Run audit script â†?verify output has >50 codes; Update offenseGroups with actual values; Select "Property Crimes" â†?map renders with non-zero counts
+   - Acceptance: Run audit script ï¿½?verify output has >50 codes; Update offenseGroups with actual values; Select "Property Crimes" ï¿½?map renders with non-zero counts
    - Test: Run unit test to verify all group codes exist in canonical list; check SQL logs for `rows.length > 0`
 
  - [ ] UX-help: Add collapsible help card to control panel (owner: dev) - Insert `<details>` element with "How to Use This Dashboard" summary and 6 bullet points; add CSS styling to match panel.
-   - Acceptance: Open dashboard â†?help card collapsed; Click header â†?card expands with instructions; Click again â†?card collapses
+   - Acceptance: Open dashboard ï¿½?help card collapsed; Click header ï¿½?card expands with instructions; Click again ï¿½?card collapses
    - Test: Verify styling matches existing panel components; verify no layout shift on expand/collapse
 
 ### Map Enhancements
 
  - [ ] MAP-tracts: Finalize Census Tracts view with precomputed counts (owner: dev) - Create `scripts/precompute_tract_counts.js` to generate last-12-months counts per tract; update tracts_view.js to use precomputed data (no population fallback).
-   - Acceptance: Run precompute script â†?JSON file created; Switch to "Census Tracts" â†?tracts render with gradient; Toggle "Per 10k" â†?legend updates; If precompute missing â†?tracts show value=0
-   - Test: Hover tract â†?tooltip shows GEOID, count, population, rate; verify population < 500 masked in per-10k mode
+   - Acceptance: Run precompute script ï¿½?JSON file created; Switch to "Census Tracts" ï¿½?tracts render with gradient; Toggle "Per 10k" ï¿½?legend updates; If precompute missing ï¿½?tracts show value=0
+   - Test: Hover tract ï¿½?tooltip shows GEOID, count, population, rate; verify population < 500 masked in per-10k mode
 
- - [ ] MAP-district-labels: Show district names instead of numeric IDs (owner: dev) - Create district_names.js lookup table with ID â†?name mapping (22 districts); update ui_tooltip.js to show "District 01 - Central: 123" format.
-   - Acceptance: Hover District 01 â†?tooltip shows "Central: 123"; Hover District 22 â†?tooltip shows "North: 456"
-   - Test: Hover invalid district â†?tooltip shows "District XYZ: 0"; verify all 22 districts have names
+ - [ ] MAP-district-labels: Show district names instead of numeric IDs (owner: dev) - Create district_names.js lookup table with ID ï¿½?name mapping (22 districts); update ui_tooltip.js to show "District 01 - Central: 123" format.
+   - Acceptance: Hover District 01 ï¿½?tooltip shows "Central: 123"; Hover District 22 ï¿½?tooltip shows "North: 456"
+   - Test: Hover invalid district ï¿½?tooltip shows "District XYZ: 0"; verify all 22 districts have names
 
  - [ ] MAP-click-popup: Implement click popup with detailed stats (owner: dev) - Add map.on('click', 'districts-fill') handler; render MapLibre Popup with district name, total, per-10k, 30d delta, top-3 offenses; query CARTO for top-3 if not cached.
-   - Acceptance: Click district â†?popup appears within 500ms; Shows district name, total, top-3 offenses; Click elsewhere â†?popup closes
-   - Test: Click during select-on-map mode â†?no popup (buffer center set instead); verify 30s cache TTL; verify 2s timeout with spinner
+   - Acceptance: Click district ï¿½?popup appears within 500ms; Shows district name, total, top-3 offenses; Click elsewhere ï¿½?popup closes
+   - Test: Click during select-on-map mode ï¿½?no popup (buffer center set instead); verify 30s cache TTL; verify 2s timeout with spinner
 
 ## In Progress
 

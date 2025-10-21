@@ -27,7 +27,11 @@
       "Bash(curl -s \"https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query?where=STATE%3D%2742%27%20AND%20COUNTY%3D%27101%27&outFields=STATE,COUNTY,GEOID,NAME,BASENAME,ALAND,AWATER&f=geojson\")",
       "Bash(curl -s \"https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query?where=STATE=''''42''''%20AND%20COUNTY=''''101''''&outFields=STATE,COUNTY,GEOID,NAME,BASENAME&returnGeometry=true&f=geojson\")",
       "Bash(python -m json.tool)",
-      "Bash(curl -s -I http://localhost:4173/)"
+      "Bash(curl -s -I http://localhost:4173/)",
+      "Bash(npm run preview)",
+      "Bash(if test -f \"public/data/tracts_phl.geojson\")",
+      "Bash(then ls -lh \"public/data/tracts_phl.geojson\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

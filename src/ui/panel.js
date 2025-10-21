@@ -33,6 +33,7 @@ export function initPanel(store, handlers) {
   const durationSel = document.getElementById('durationSel');
   const preset6 = document.getElementById('preset6');
   const preset12 = document.getElementById('preset12');
+  const overlayTractsChk = document.getElementById('overlayTractsChk');
 
   const onChange = debounce(() => {
     // Derive selected offense codes from groups (unless drilldown overrides)
@@ -127,6 +128,11 @@ export function initPanel(store, handlers) {
     onChange();
   });
 
+  overlayTractsChk?.addEventListener('change', () => {
+    store.overlayTractsLines = overlayTractsChk.checked;
+    handlers.onTractsOverlayToggle?.(store.overlayTractsLines);
+  });
+
   function applyModeUI() {
     const mode = store.queryMode || 'buffer';
     const isBuffer = mode === 'buffer';
@@ -193,6 +199,7 @@ export function initPanel(store, handlers) {
   if (queryModeSel) queryModeSel.value = store.queryMode || 'buffer';
   if (startMonth && store.startMonth) startMonth.value = store.startMonth;
   if (durationSel) durationSel.value = String(store.durationMonths || 6);
+  if (overlayTractsChk) overlayTractsChk.checked = store.overlayTractsLines || false;
 
   // Initialize drilldown select (disabled until groups are selected)
   if (fineSel) {
