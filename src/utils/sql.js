@@ -376,20 +376,26 @@ function baseTemporalClauses(startIso, endIso, types, { includeTypes = true, dri
 }
 
 /**
- * Build monthly time series SQL for a single census tract (STUB).
- * @param {object} params
- * @param {string} params.start - ISO date
- * @param {string} params.end - ISO date
- * @param {string[]} params.types - Offense codes
- * @param {string} params.tractGEOID - 11-digit census tract GEOID
- * @param {object} params.tractGeometry - GeoJSON geometry object
- * @returns {string} SQL query
- * @throws {Error} Not yet implemented
+ * Build monthly time series SQL for a single census tract.
  */
 export function buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry }) {
-  // TODO: Implement using ST_Intersects pattern from scripts/tract_sql_samples.mjs
-  // See Sample 1: Monthly Time Series
-  throw new Error(`Tract charts not yet implemented (stub). Requested: monthly series for tract ${tractGEOID}`);
+  const startIso = dateFloorGuard(start);
+  const endIso = ensureIso(end, 'end');
+  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const gj = geojsonString6(tractGeometry);
+  const bbox = bbox4326(tractGeometry);
+  if (bbox) {
+    const [minx, miny, maxx, maxy] = bbox;
+    clauses.push(`  AND the_geom && ST_Transform(ST_MakeEnvelope(${minx}, ${miny}, ${maxy}, ${maxy}, 4326), 3857)`);
+  }
+  clauses.push(`  AND ST_Intersects(the_geom, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON('${gj}'), 4326), 3857))`);
+
+  return [
+    "SELECT date_trunc('month', dispatch_date_time) AS m, COUNT(*) AS n",
+    'FROM incidents_part1_part2',
+    ...clauses,
+    'GROUP BY 1 ORDER BY 1',
+  ].join('\n');
 }
 
 /**
@@ -403,10 +409,23 @@ export function buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeome
  * @returns {string} SQL query
  * @throws {Error} Not yet implemented
  */
-export function buildTopTypesTractSQL({ start, end, tractGEOID, tractGeometry, limit = 12 }) {
-  // TODO: Implement using pattern from scripts/tract_sql_samples.mjs
-  // See Sample 2: Top N Offense Types
-  throw new Error(`Tract charts not yet implemented (stub). Requested: top ${limit} types for tract ${tractGEOID}`);
+export function buildTopTypesTractSQL({ start, end, types, tractGEOID, tractGeometry, limit = 12 }) {
+  const startIso = dateFloorGuard(start);
+  const endIso = ensureIso(end, 'end');
+  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const gj = geojsonString6(tractGeometry);
+  const bbox = bbox4326(tractGeometry);
+  if (bbox) {
+    const [minx, miny, maxx, maxy] = bbox;
+    clauses.push(`  AND the_geom && ST_Transform(ST_MakeEnvelope(${minx}, ${miny}, ${maxx}, ${maxy}, 4326), 3857)`);
+  }
+  clauses.push(`  AND ST_Intersects(the_geom, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON('${gj}'), 4326), 3857))`);
+  return [
+    'SELECT text_general_code, COUNT(*) AS n',
+    'FROM incidents_part1_part2',
+    ...clauses,
+    `GROUP BY 1 ORDER BY n DESC LIMIT ${ensurePositiveInt(limit,'limit')}`,
+  ].join('\n');
 }
 
 /**
@@ -421,7 +440,55 @@ export function buildTopTypesTractSQL({ start, end, tractGEOID, tractGeometry, l
  * @throws {Error} Not yet implemented
  */
 export function buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry }) {
-  // TODO: Implement using pattern from scripts/tract_sql_samples.mjs
-  // See Sample 3: 7x24 Heatmap (Day-of-Week × Hour)
-  throw new Error(`Tract charts not yet implemented (stub). Requested: 7x24 heatmap for tract ${tractGEOID}`);
+  const startIso = dateFloorGuard(start);
+  const endIso = ensureIso(end, 'end');
+  const clauses = baseTemporalClauses(startIso, endIso, types);
+  const gj = geojsonString6(tractGeometry);
+  const bbox = bbox4326(tractGeometry);
+  if (bbox) {
+    const [minx, miny, maxx, maxy] = bbox;
+    clauses.push(`  AND the_geom && ST_Transform(ST_MakeEnvelope(${minx}, ${miny}, ${maxx}, ${maxy}, 4326), 3857)`);
+  }
+  clauses.push(`  AND ST_Intersects(the_geom, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON('${gj}'), 4326), 3857))`);
+  return [
+    "SELECT EXTRACT(DOW  FROM dispatch_date_time AT TIME ZONE 'America/New_York') AS dow,",
+    "       EXTRACT(HOUR FROM dispatch_date_time AT TIME ZONE 'America/New_York') AS hr,",
+    '       COUNT(*) AS n',
+    'FROM incidents_part1_part2',
+    ...clauses,
+    'GROUP BY 1,2 ORDER BY 1,2',
+  ].join('\n');
+}
+
+// Helpers: round geometry to 6 decimals and compute bbox in 4326
+function geojsonString6(geom) {
+  if (!geom) throw new Error('tractGeometry required');
+  const g = roundGeometry6(geom);
+  return JSON.stringify(g).replace(/'/g, "''");
+}
+
+function roundGeometry6(geom) {
+  const r6 = (n) => Math.round(n * 1e6) / 1e6;
+  const rc = (c) => Array.isArray(c[0]) ? c.map(rc) : [r6(c[0]), r6(c[1])];
+  if (geom.type === 'Polygon') return { type: 'Polygon', coordinates: rc(geom.coordinates) };
+  if (geom.type === 'MultiPolygon') return { type: 'MultiPolygon', coordinates: geom.coordinates.map(rc) };
+  return geom;
+}
+
+function bbox4326(geom) {
+  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  const visit = (coords) => {
+    if (!Array.isArray(coords)) return;
+    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+      const x = coords[0], y = coords[1];
+      if (x < minx) minx = x; if (y < miny) miny = y; if (x > maxx) maxx = x; if (y > maxy) maxy = y;
+    } else {
+      for (const c of coords) visit(c);
+    }
+  };
+  if (!geom) return null;
+  if (geom.type === 'Polygon') visit(geom.coordinates);
+  else if (geom.type === 'MultiPolygon') visit(geom.coordinates);
+  if (!Number.isFinite(minx)) return null;
+  return [minx, miny, maxx, maxy];
 }

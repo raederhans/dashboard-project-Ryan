@@ -1,5 +1,6 @@
-import { quantileBreaks } from './style_helpers.js';
 import { updateLegend, hideLegend } from './legend.js';
+import { computeBreaks, makePalette, toMapLibreStep } from '../utils/classify.js';
+import { store } from '../state/store.js';
 
 /**
  * Add or update a districts choropleth from merged GeoJSON.
@@ -10,8 +11,8 @@ import { updateLegend, hideLegend } from './legend.js';
 export function renderDistrictChoropleth(map, merged) {
   const values = (merged?.features || []).map((f) => Number(f?.properties?.value) || 0);
   const allZero = values.length === 0 || values.every((v) => v === 0);
-  const breaks = allZero ? [] : quantileBreaks(values, 5);
-  const colors = ['#f1eef6', '#bdc9e1', '#74a9cf', '#2b8cbe', '#045a8d'];
+  const breaks = allZero ? [] : computeBreaks(values, { method: store.classMethod, bins: store.classBins, custom: store.classCustomBreaks });
+  const colors = makePalette(store.classPalette, (breaks.length || Math.max(1, store.classBins - 1)) + 1);
 
   // Update legend
   if (allZero || breaks.length === 0) {
@@ -20,11 +21,8 @@ export function renderDistrictChoropleth(map, merged) {
     updateLegend({ title: 'Districts', unit: '', breaks, colors });
   }
 
-  // Build step expression: ['step', ['get','value'], c0, b1, c1, b2, c2, ...]
-  const stepExpr = ['step', ['coalesce', ['get', 'value'], 0], colors[0]];
-  for (let i = 0; i < breaks.length; i++) {
-    stepExpr.push(breaks[i], colors[Math.min(i + 1, colors.length - 1)]);
-  }
+  // Build step expression from classifier
+  const { paintProps } = toMapLibreStep(breaks, colors, { opacity: store.classOpacity });
 
   const sourceId = 'districts';
   const fillId = 'districts-fill';
@@ -45,13 +43,13 @@ export function renderDistrictChoropleth(map, merged) {
       paint: allZero ? {
         'fill-color': '#e5e7eb', 'fill-opacity': 0.6,
       } : {
-        'fill-color': stepExpr,
-        'fill-opacity': 0.75,
+        'fill-color': paintProps['fill-color'],
+        'fill-opacity': paintProps['fill-opacity'],
       },
     });
   } else {
-    map.setPaintProperty(fillId, 'fill-color', allZero ? '#e5e7eb' : stepExpr);
-    map.setPaintProperty(fillId, 'fill-opacity', allZero ? 0.6 : 0.75);
+    map.setPaintProperty(fillId, 'fill-color', allZero ? '#e5e7eb' : paintProps['fill-color']);
+    map.setPaintProperty(fillId, 'fill-opacity', allZero ? 0.6 : paintProps['fill-opacity']);
   }
 
   if (!map.getLayer(lineId)) {

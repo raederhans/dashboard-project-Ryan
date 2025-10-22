@@ -1,6 +1,7 @@
 /**
- * Census tract layer management: outlines (always-on) + fill (choropleth when active)
+ * Census tract layer management: outlines overlay + fill (choropleth when active)
  */
+import { store } from '../state/store.js';
 
 /**
  * Add or update tract outline layer (thin dark-gray, always visible)
@@ -26,7 +27,7 @@ export function upsertTractsOutline(map, fc) {
     });
   }
 
-  // Add line layer if not present
+  // Add line layer if not present (default hidden; initial sync to store)
   if (!map.getLayer(layerId)) {
     // Insert above districts-fill, below districts-label (correct z-order)
     let beforeId = 'districts-label'; // Try to place before district labels
@@ -44,13 +45,19 @@ export function upsertTractsOutline(map, fc) {
       id: layerId,
       type: 'line',
       source: sourceId,
-      layout: {},
+      layout: { visibility: 'none' },
       paint: {
         'line-color': '#555',
         'line-width': 0.5,
         'line-opacity': 0.9,
       },
     }, beforeId);
+
+    // One-time visibility sync based on store (overlay checkbox)
+    try {
+      const vis = store.overlayTractsLines ? 'visible' : 'none';
+      map.setLayoutProperty(layerId, 'visibility', vis);
+    } catch {}
   }
 }
 

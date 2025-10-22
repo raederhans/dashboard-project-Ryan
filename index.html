@@ -131,6 +131,50 @@
           <li>See README for data sources & disclaimers.</li>
         </ul>
       </details>
+
+      <div id="choropleth-controls" style="margin-top:10px; padding-top:8px; border-top:1px solid #e5e7eb;">
+        <div style="font:600 13px/1.2 system-ui, sans-serif; margin:4px 0 8px;">Choropleth</div>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <div style="flex:1;">
+            <label for="classMethodSel" style="display:block; font-size:12px; color:#374151;">Method</label>
+            <select id="classMethodSel" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;">
+              <option value="quantile" selected>Quantile</option>
+              <option value="equal">Equal Interval</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label for="classBinsRange" style="display:block; font-size:12px; color:#374151;">Bins (<span id="classBinsVal">5</span>)</label>
+            <input id="classBinsRange" type="range" min="3" max="9" step="1" value="5" style="width:100%;" />
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <div style="flex:1;">
+            <label for="classPaletteSel" style="display:block; font-size:12px; color:#374151;">Palette</label>
+            <select id="classPaletteSel" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;">
+              <option>Blues</option>
+              <option>YlGnBu</option>
+              <option>OrRd</option>
+              <option>PuBuGn</option>
+              <option>Greens</option>
+              <option>Purples</option>
+              <option>BuGn</option>
+              <option>BuPu</option>
+              <option>GnBu</option>
+              <option>YlOrRd</option>
+              <option>RdBu</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label for="classOpacityRange" style="display:block; font-size:12px; color:#374151;">Opacity (<span id="classOpacityVal">0.75</span>)</label>
+            <input id="classOpacityRange" type="range" min="0.2" max="1" step="0.05" value="0.75" style="width:100%;" />
+          </div>
+        </div>
+        <div id="classCustomRow" style="display:none;">
+          <label for="classCustomInput" style="display:block; font-size:12px; color:#374151;">Custom breaks (comma-separated)</label>
+          <input id="classCustomInput" type="text" placeholder="10,25,50,100" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px;" />
+        </div>
+      </div>
     </div>
     <div id="compare-card" style="position:fixed; left:12px; bottom:12px; z-index:18; width:300px; background:rgba(255,255,255,0.97); padding:10px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.15)">
       <div style="font:600 13px/1.2 system-ui, sans-serif; margin-bottom:6px;">Compare (A vs B)</div>

@@ -1,6 +1,7 @@
-import { quantileBreaks } from './style_helpers.js';
 import { updateLegend, hideLegend } from './legend.js';
 import { upsertTractsFill, showTractsFill, hideTractsFill } from './tracts_layers.js';
+import { store } from '../state/store.js';
+import { computeBreaks, makePalette, toMapLibreStep } from '../utils/classify.js';
 
 /**
  * Render tracts choropleth, masking low-population tracts via __mask flag.
@@ -13,8 +14,8 @@ export function renderTractsChoropleth(map, merged) {
   const values = merged?.values || (geojson?.features || []).map((f) => Number(f?.properties?.value) || 0);
 
   const allZero = values.length === 0 || values.every((v) => v === 0);
-  const breaks = allZero ? [] : quantileBreaks(values, 5);
-  const colors = ['#fee5d9', '#fcbba1', '#fc9272', '#fb6a4a', '#de2d26'];
+  const breaks = allZero ? [] : computeBreaks(values, { method: store.classMethod, bins: store.classBins, custom: store.classCustomBreaks });
+  const colors = makePalette(store.classPalette, (breaks.length || Math.max(1, store.classBins - 1)) + 1);
 
   // Update legend
   if (allZero || breaks.length === 0) {
@@ -26,16 +27,10 @@ export function renderTractsChoropleth(map, merged) {
     updateLegend({ title: 'Census Tracts', unit: '', breaks, colors });
 
     // Build step expression for fill color
-    const stepExpr = ['step', ['coalesce', ['get', 'value'], 0], colors[0]];
-    for (let i = 0; i < breaks.length; i++) {
-      stepExpr.push(breaks[i], colors[Math.min(i + 1, colors.length - 1)]);
-    }
+    const { paintProps } = toMapLibreStep(breaks, colors, { opacity: store.classOpacity });
 
     // Update tract fill layer (use new tracts_layers module)
-    upsertTractsFill(map, geojson, {
-      fillColor: stepExpr,
-      fillOpacity: 0.7,
-    });
+    upsertTractsFill(map, geojson, { fillColor: paintProps['fill-color'], fillOpacity: paintProps['fill-opacity'] });
     showTractsFill(map);
     hideOutlinesOnlyBanner();
   }

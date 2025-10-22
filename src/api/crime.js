@@ -2,6 +2,7 @@ import { CARTO_SQL_BASE } from "../config.js";
 import { fetchJson, logQuery } from "../utils/http.js";
 import * as Q from "../utils/sql.js";
 import { expandGroupsToCodes } from "../utils/types.js";
+import { fetchTractsCachedFirst } from "./boundaries.js";
 
 /**
  * Fetch crime point features for Map A.
@@ -256,15 +257,17 @@ export async function fetchAvailableCodesForGroups({ start, end, groups }) {
  * @throws {Error} Not yet implemented
  */
 export async function fetchMonthlySeriesTract({ start, end, types, tractGEOID }) {
-  // TODO: Load tract geometry from tracts_phl.geojson, call buildMonthlyTractSQL, fetchJson
-  // Implementation steps:
-  // 1. Fetch /public/data/tracts_phl.geojson (or use cached version from main.js)
-  // 2. Find feature where properties.GEOID === tractGEOID
-  // 3. Extract feature.geometry (GeoJSON polygon)
-  // 4. Call buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry })
-  // 5. POST to CARTO_SQL_BASE with SQL query
-  // 6. Return { rows: [...] }
-  throw new Error(`Tract charts not yet implemented (stub). Requested: monthly series for tract ${tractGEOID}`);
+  const tracts = await fetchTractsCachedFirst();
+  const feat = (tracts.features || []).find((f) => {
+    const p = f.properties || {}; const g = p.GEOID || p.GEOID20;
+    return String(g) === String(tractGEOID);
+  });
+  if (!feat) throw new Error(`Tract ${tractGEOID} not found`);
+  const sql = Q.buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry: feat.geometry });
+  await logQuery('fetchMonthlySeriesTract', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 90_000,
+  });
 }
 
 /**
@@ -277,10 +280,18 @@ export async function fetchMonthlySeriesTract({ start, end, types, tractGEOID })
  * @returns {Promise<{rows: Array<{text_general_code: string, n: number}>}>}
  * @throws {Error} Not yet implemented
  */
-export async function fetchTopTypesTract({ start, end, tractGEOID, limit = 12 }) {
-  // TODO: Similar pattern to fetchMonthlySeriesTract
-  // Call buildTopTypesTractSQL({ start, end, tractGEOID, tractGeometry, limit })
-  throw new Error(`Tract charts not yet implemented (stub). Requested: top ${limit} types for tract ${tractGEOID}`);
+export async function fetchTopTypesTract({ start, end, types, tractGEOID, limit = 12 }) {
+  const tracts = await fetchTractsCachedFirst();
+  const feat = (tracts.features || []).find((f) => {
+    const p = f.properties || {}; const g = p.GEOID || p.GEOID20;
+    return String(g) === String(tractGEOID);
+  });
+  if (!feat) throw new Error(`Tract ${tractGEOID} not found`);
+  const sql = Q.buildTopTypesTractSQL({ start, end, types, tractGEOID, tractGeometry: feat.geometry, limit });
+  await logQuery('fetchTopTypesTract', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 90_000,
+  });
 }
 
 /**
@@ -294,7 +305,15 @@ export async function fetchTopTypesTract({ start, end, tractGEOID, limit = 12 })
  * @throws {Error} Not yet implemented
  */
 export async function fetch7x24Tract({ start, end, types, tractGEOID }) {
-  // TODO: Similar pattern to fetchMonthlySeriesTract
-  // Call buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry })
-  throw new Error(`Tract charts not yet implemented (stub). Requested: 7x24 heatmap for tract ${tractGEOID}`);
+  const tracts = await fetchTractsCachedFirst();
+  const feat = (tracts.features || []).find((f) => {
+    const p = f.properties || {}; const g = p.GEOID || p.GEOID20;
+    return String(g) === String(tractGEOID);
+  });
+  if (!feat) throw new Error(`Tract ${tractGEOID} not found`);
+  const sql = Q.buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry: feat.geometry });
+  await logQuery('fetch7x24Tract', sql);
+  return fetchJson(CARTO_SQL_BASE, {
+    method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 90_000,
+  });
 }

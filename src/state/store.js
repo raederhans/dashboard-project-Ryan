@@ -44,6 +44,12 @@ export const store = /** @type {Store} */ ({
   selectedDistrictCode: null,
   selectedTractGEOID: null,
   overlayTractsLines: false, // Show tract boundaries overlay in district mode
+  // Choropleth classification
+  classMethod: 'quantile',
+  classBins: 5,
+  classPalette: 'Blues',
+  classOpacity: 0.75,
+  classCustomBreaks: [],
   getStartEnd() {
     if (this.startMonth && this.durationMonths) {
       const startD = dayjs(`${this.startMonth}-01`).startOf('month');

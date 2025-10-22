@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-21 10:43 — Structure Cleanup: Single Root Entry, Dist Ignored ✅
+
+**Status:** ✅ Repository standardized to Vite best practices
+
+### Changes
+- **Single Entry Point**: Verified `/index.html` as sole entry (no duplicates in `/public` or active elsewhere)
+- **.gitignore Updated**: Added `dist/`, `logs/`, `.DS_Store`, `*.local`, `.env*`
+- **Git Tracking Fixed**: Untracked 6 build artifacts from `dist/` via `git rm -r --cached dist/`
+- **Config Verified**: `vite.config.js` already in canonical form (`build.outDir: 'dist'`, no `root:`)
+- **Script Tag**: Confirmed absolute path `/src/main.js` (not relative)
+- **Static Assets**: Verified proper separation (`/public/data` for GeoJSON, `/src/data` for imported JSON)
+
+### Verification
+- Build: ✅ SUCCESS (463 modules, 5.40s)
+- Preview: ✅ HTTP 200 OK on localhost:4173
+- Logs: [STRUCTURE_SWEEP_20251021_1030.md](../logs/STRUCTURE_SWEEP_20251021_1030.md), [build_structure_pass_20251021_104330.log](../logs/build_structure_pass_20251021_104330.log), [preview_http_structure_pass_20251021_104330.log](../logs/preview_http_structure_pass_20251021_104330.log)
+
+### Documentation
+- Created: [docs/STRUCTURE_FINAL.md](STRUCTURE_FINAL.md) — Comprehensive structure guide with directory tree, asset organization, and "how to add" checklist
+
+### Summary
+Repository now follows Vite SPA conventions: one HTML entry at root, build artifacts ignored, absolute script paths, public-only static assets.
+
+---
+
 ## 2025-10-20 22:24 — Tract Charts Stubs + Tract Overlay Toggle (P1) ✅
 
 **Status:** ✅ Task C complete — Tract chart entry points staged for implementation
@@ -250,6 +275,10 @@ Restored and hardened tract boundary overlays with three-scenario support:
 2025-10-20 16:42 — Added queryMode + selectedDistrictCode/selectedTractGEOID to store; UI wires Query Mode selector and hides buffer-only controls when not in buffer; Esc exits selection; clear button added.
 2025-10-20 16:42 — District-scoped filtering for series/topN/7x24 and points; buffer charts guarded until center; see logs/area_sql_*.log and logs/mode_switch_smoke_*.log
 2025-10-20 16:42 — Drilldown auto-clears when groups change; dev console shows cache HIT/MISS lines (development only); empty-window banner reinforced.
+2025-10-22 14:48 — fix(tracts): start hidden and sync initial visibility with store.overlayTractsLines; see logs/TRACTS_OVERLAY_SYNC_*.md
+2025-10-22 14:48 — fix(drilldown): normalize group keys (snake/lower/pascal) and populate on init; see logs/DRILLDOWN_KEYS_NORMALIZE_*.md
+2025-10-22 15:21 — feat(tract): charts wired (monthly/TopN/7×24); GEOID extraction fixed; see logs/TRACT_WIRING_IMPL_*.md
+2025-10-22 15:21 — feat(choropleth): add classification controls (method/bins/palette/opacity/custom); classifier module; legend integrates; defaults preserved
 
 ## 2025-10-20 11:07 — Acceptance Test PASS
 

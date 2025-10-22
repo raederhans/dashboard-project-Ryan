@@ -31,7 +31,12 @@
       "Bash(npm run preview)",
       "Bash(if test -f \"public/data/tracts_phl.geojson\")",
       "Bash(then ls -lh \"public/data/tracts_phl.geojson\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(tree -L 3 -d -I 'node_modules' .)",
+      "Bash(git rm -r --cached dist/)",
+      "Bash(git grep:*)",
+      "Bash(npm run dev:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

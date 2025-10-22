@@ -34,6 +34,15 @@ export function initPanel(store, handlers) {
   const preset6 = document.getElementById('preset6');
   const preset12 = document.getElementById('preset12');
   const overlayTractsChk = document.getElementById('overlayTractsChk');
+  // Choropleth controls
+  const classMethodSel = document.getElementById('classMethodSel');
+  const classBinsRange = document.getElementById('classBinsRange');
+  const classBinsVal = document.getElementById('classBinsVal');
+  const classPaletteSel = document.getElementById('classPaletteSel');
+  const classOpacityRange = document.getElementById('classOpacityRange');
+  const classOpacityVal = document.getElementById('classOpacityVal');
+  const classCustomRow = document.getElementById('classCustomRow');
+  const classCustomInput = document.getElementById('classCustomInput');
 
   const onChange = debounce(() => {
     // Derive selected offense codes from groups (unless drilldown overrides)
@@ -75,8 +84,7 @@ export function initPanel(store, handlers) {
     onChange();
   });
 
-  groupSel?.addEventListener('change', async () => {
-    const values = Array.from(groupSel.selectedOptions).map((o) => o.value);
+  async function populateDrilldown(values) {
     store.selectedGroups = values;
     store.selectedDrilldownCodes = []; // Clear drilldown when parent groups change
 
@@ -109,6 +117,16 @@ export function initPanel(store, handlers) {
         }
       }
     }
+  }
+
+  groupSel?.addEventListener('change', async () => {
+    const values = Array.from(groupSel.selectedOptions).map((o) => o.value);
+    // Dev-only console assertion
+    const dev = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production');
+    if (dev) {
+      try { console.debug('drilldown groups→codes', values, expandGroupsToCodes(values)); } catch {}
+    }
+    await populateDrilldown(values);
     onChange();
   });
 
@@ -131,6 +149,32 @@ export function initPanel(store, handlers) {
   overlayTractsChk?.addEventListener('change', () => {
     store.overlayTractsLines = overlayTractsChk.checked;
     handlers.onTractsOverlayToggle?.(store.overlayTractsLines);
+  });
+
+  // Choropleth controls wiring
+  function syncClassUI() {
+    if (classBinsVal) classBinsVal.textContent = String(store.classBins || 5);
+    if (classOpacityVal) classOpacityVal.textContent = String((store.classOpacity || 0.75).toFixed(2));
+    if (classCustomRow) classCustomRow.style.display = (store.classMethod === 'custom') ? '' : 'none';
+  }
+  classMethodSel?.addEventListener('change', () => {
+    store.classMethod = classMethodSel.value;
+    if (store.classMethod !== 'custom') store.classCustomBreaks = [];
+    syncClassUI();
+    onChange();
+  });
+  classBinsRange?.addEventListener('input', () => {
+    store.classBins = Number(classBinsRange.value) || 5;
+    syncClassUI();
+  });
+  classBinsRange?.addEventListener('change', () => { onChange(); });
+  classPaletteSel?.addEventListener('change', () => { store.classPalette = classPaletteSel.value; onChange(); });
+  classOpacityRange?.addEventListener('input', () => { store.classOpacity = Number(classOpacityRange.value) || 0.75; syncClassUI(); });
+  classOpacityRange?.addEventListener('change', () => { onChange(); });
+  classCustomInput?.addEventListener('change', () => {
+    const parts = (classCustomInput.value || '').split(',').map(s => Number(s.trim())).filter((n) => Number.isFinite(n)).sort((a,b)=>a-b);
+    store.classCustomBreaks = parts;
+    onChange();
   });
 
   function applyModeUI() {
@@ -200,6 +244,11 @@ export function initPanel(store, handlers) {
   if (startMonth && store.startMonth) startMonth.value = store.startMonth;
   if (durationSel) durationSel.value = String(store.durationMonths || 6);
   if (overlayTractsChk) overlayTractsChk.checked = store.overlayTractsLines || false;
+  if (classMethodSel) classMethodSel.value = store.classMethod || 'quantile';
+  if (classBinsRange) classBinsRange.value = String(store.classBins || 5);
+  if (classPaletteSel) classPaletteSel.value = store.classPalette || 'Blues';
+  if (classOpacityRange) classOpacityRange.value = String(store.classOpacity || 0.75);
+  syncClassUI();
 
   // Initialize drilldown select (disabled until groups are selected)
   if (fineSel) {
@@ -208,6 +257,14 @@ export function initPanel(store, handlers) {
   }
 
   applyModeUI();
+
+  // Init-time populate: if groups preselected, populate drilldown immediately
+  if (groupSel) {
+    const initGroups = Array.from(groupSel.selectedOptions).map(o => o.value);
+    if (initGroups.length > 0) {
+      populateDrilldown(initGroups).then(() => onChange());
+    }
+  }
 
   startMonth?.addEventListener('change', () => { store.startMonth = startMonth.value || null; onChange(); });
   durationSel?.addEventListener('change', () => { store.durationMonths = Number(durationSel.value) || 6; onChange(); });

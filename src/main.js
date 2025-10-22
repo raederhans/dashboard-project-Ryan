@@ -74,7 +74,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Charts: guard until center is set or scope by district
   try {
-    const { start, end, types, center3857, radiusM, queryMode, selectedDistrictCode } = store.getFilters();
+    const { start, end, types, drilldownCodes, center3857, radiusM, queryMode, selectedDistrictCode, selectedTractGEOID } = store.getFilters();
     const pane = document.getElementById('charts') || document.body;
     const status = document.getElementById('charts-status') || (() => {
       const d = document.createElement('div');
@@ -85,7 +85,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     })();
     if ((queryMode === 'buffer' && center3857) || queryMode === 'district') {
       status.textContent = '';
-      await updateAllCharts({ start, end, types, center3857, radiusM, queryMode, selectedDistrictCode });
+      await updateAllCharts({ start, end, types, drilldownCodes, center3857, radiusM, queryMode, selectedDistrictCode, selectedTractGEOID });
     } else {
       status.textContent = 'Tip: click the map to set a center and show buffer-based charts.';
     }
@@ -105,7 +105,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let _tractClickWired = false;
   let _districtClickWired = false;
   async function refreshAll() {
-    const { start, end, types, queryMode, selectedDistrictCode, selectedTractGEOID } = store.getFilters();
+    const { start, end, types, drilldownCodes, queryMode, selectedDistrictCode, selectedTractGEOID } = store.getFilters();
     try {
       if (store.adminLevel === 'tracts') {
         const merged = await getTractsMerged({ per10k: store.per10k });
@@ -122,15 +122,15 @@ window.addEventListener('DOMContentLoaded', async () => {
           map.on('click', 'tracts-fill', (e) => {
             try {
               const f = e.features && e.features[0];
-              const tract = f?.properties?.TRACT_FIPS;
-              const state = f?.properties?.STATE_FIPS || f?.properties?.STATE;
-              const county = f?.properties?.COUNTY_FIPS || f?.properties?.COUNTY;
-              if (tract && state && county && store.queryMode === 'tract') {
-                const geoid = String(state) + String(county) + String(tract).padStart(6,'0');
+              const geoid = getTractGEOID(f?.properties || {});
+              if (geoid && store.queryMode === 'tract') {
                 store.selectedTractGEOID = geoid;
                 upsertSelectedTract(map, geoid);
                 // clear buffer overlay
                 removeBufferOverlay();
+                if ((typeof import.meta !== 'undefined' && import.meta.env?.DEV) || (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production')) {
+                  console.debug('Tract selected GEOID:', geoid);
+                }
                 // charts follow tract MVP path
                 refreshAll();
               }
@@ -258,5 +258,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     for (const id of ['buffer-a-fill','buffer-a-line']) { if (map.getLayer(id)) try { map.removeLayer(id); } catch {} }
     if (map.getSource('buffer-a')) try { map.removeSource('buffer-a'); } catch {}
   }
-});
 
+  function getTractGEOID(props) {
+    return props?.GEOID || props?.GEOID20 || props?.TRACT_GEOID ||
+           (props?.STATE && props?.COUNTY && props?.TRACT
+             ? String(props.STATE).padStart(2,'0') + String(props.COUNTY).padStart(3,'0') + String(props.TRACT).padStart(6,'0')
+             : (props?.TRACT_FIPS && props?.STATE_FIPS && props?.COUNTY_FIPS
+                 ? String(props.STATE_FIPS).padStart(2,'0') + String(props.COUNTY_FIPS).padStart(3,'0') + String(props.TRACT_FIPS).padStart(6,'0')
+                 : null));
+  }
+});

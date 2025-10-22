@@ -1,6 +1,7 @@
+import groups from '../data/offense_groups.json' assert { type: 'json' };
+
 /**
  * Map offense text_general_code into coarse groups with colors.
- * This is a lightweight, file-local mapping; adjust as needed.
  * @param {string} name
  * @returns {string} hex color
  */
@@ -40,8 +41,39 @@ export function categoryColorPairs() {
   ];
 }
 
-// Offense groups for controls
+// Offense groups for controls (original JSON)
 export const offenseGroups = groups;
+
+// Canonicalization helpers for robust key matching
+export function toSnake(s) {
+  return String(s || '')
+    .trim()
+    .replace(/[\s\-\/()]+/g, '_')
+    .replace(/__+/g, '_');
+}
+
+export function toPascalFromSnake(s) {
+  return toSnake(s)
+    .split('_')
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join('_');
+}
+
+// Build a lookup index that recognizes several naming variants
+const OFFENSE_GROUPS_INDEX = (() => {
+  const idx = new Map();
+  for (const [Key, arr] of Object.entries(groups)) {
+    const variants = new Set([
+      Key,
+      Key.toLowerCase(),
+      toSnake(Key).toLowerCase(),
+      toPascalFromSnake(Key),
+    ]);
+    for (const v of variants) idx.set(v, arr);
+  }
+  return idx;
+})();
 
 /**
  * Expand selected group keys into a flat list of text_general_code values.
@@ -49,15 +81,21 @@ export const offenseGroups = groups;
  * @returns {string[]}
  */
 export function expandGroupsToCodes(selectedGroups = []) {
-  const out = [];
-  for (const key of selectedGroups) {
-    const k = key.replace(/[- ]/g, '_');
-    const arr = offenseGroups[key] || offenseGroups[k] || offenseGroups[key?.toUpperCase?.()] || offenseGroups[key?.toLowerCase?.()];
-    if (Array.isArray(arr)) out.push(...arr);
+  const out = new Set();
+  for (const g of selectedGroups) {
+    const candidates = [
+      g,
+      g?.toLowerCase?.(),
+      toSnake(g)?.toLowerCase?.(),
+      toPascalFromSnake(g),
+    ];
+    let codes = null;
+    for (const c of candidates) {
+      if (c && OFFENSE_GROUPS_INDEX.has(c)) { codes = OFFENSE_GROUPS_INDEX.get(c); break; }
+    }
+    if (Array.isArray(codes)) codes.forEach((c) => out.add(c));
   }
-  // de-duplicate
-  return Array.from(new Set(out));
+  return Array.from(out);
 }
 
 export function getCodesForGroups(groups) { return expandGroupsToCodes(groups); }
-import groups from '../data/offense_groups.json' assert { type: 'json' };
