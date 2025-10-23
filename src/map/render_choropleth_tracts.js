@@ -12,6 +12,7 @@ import { computeBreaks, makePalette, toMapLibreStep } from '../utils/classify.js
 export function renderTractsChoropleth(map, merged) {
   const geojson = merged?.geojson || merged; // Handle both formats
   const values = merged?.values || (geojson?.features || []).map((f) => Number(f?.properties?.value) || 0);
+  const subtitle = merged?.legendSubtitle || '';
 
   const allZero = values.length === 0 || values.every((v) => v === 0);
   const breaks = allZero ? [] : computeBreaks(values, { method: store.classMethod, bins: store.classBins, custom: store.classCustomBreaks });
@@ -24,7 +25,7 @@ export function renderTractsChoropleth(map, merged) {
     // Show banner: outlines-only mode
     showOutlinesOnlyBanner();
   } else {
-    updateLegend({ title: 'Census Tracts', unit: '', breaks, colors });
+    updateLegend({ title: 'Census Tracts', unit: '', breaks, colors, subtitle });
 
     // Build step expression for fill color
     const { paintProps } = toMapLibreStep(breaks, colors, { opacity: store.classOpacity });

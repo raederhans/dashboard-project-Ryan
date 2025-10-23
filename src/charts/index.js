@@ -10,7 +10,7 @@ import {
   fetch7x24Buffer,
   fetchTopTypesByDistrict,
   fetch7x24District,
-  fetchMonthlySeriesTract,
+  fetchMonthlyTract,
   fetchTopTypesTract,
   fetch7x24Tract,
 } from '../api/crime.js';
@@ -67,7 +67,7 @@ export async function updateAllCharts({ start, end, types = [], drilldownCodes =
       const codes = (Array.isArray(drilldownCodes) && drilldownCodes.length) ? drilldownCodes : types;
       [city, bufOrArea, topn, heat] = await Promise.all([
         fetchMonthlySeriesCity({ start, end, types }),
-        fetchMonthlySeriesTract({ start, end, types: codes, tractGEOID: selectedTractGEOID }),
+        fetchMonthlyTract({ start, end, geoid: selectedTractGEOID, codes }),
         fetchTopTypesTract({ start, end, types: codes, tractGEOID: selectedTractGEOID, limit: 12 }),
         fetch7x24Tract({ start, end, types: codes, tractGEOID: selectedTractGEOID }),
       ]);

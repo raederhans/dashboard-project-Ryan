@@ -2,6 +2,78 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-23 11:03 — Census Tract Comprehensive Audit: UI, Visibility, Analytics ✅
+
+**Status:** ✅ Audit complete — Read-only analysis of tract implementation
+
+### Scope
+Three-part audit of census tract functionality:
+- **Task A**: Standalone Census Tracts Data Map (ACS demographic visualization)
+- **Task B**: Layer visibility (why tracts not visible when overlay enabled)
+- **Task C**: Online tract analytics path (CARTO queries, chart wiring)
+
+### Key Findings
+
+**Task A — Standalone Data Map**: ❌ **NOT IMPLEMENTED**
+- Designed but not built (see [TRACTS_DATA_INVENTORY_AND_PLAN_20251022_160826.md](../logs/TRACTS_DATA_INVENTORY_AND_PLAN_20251022_160826.md))
+- Missing files: `metrics_registry.js`, `city_averages.js`, `tracts_data_map.js`
+- Missing UI: No metric picker, no data mode toggle, no legend subtitle for city averages
+- Missing state: `dataMode`, `selectedMetric`, `cityAverages` properties not in store
+- **Impact**: Users cannot visualize ACS demographics (population, income, poverty) on tract choropleth
+
+**Task B — Layer Visibility**: ⚠️ **DESIGNED GATING + MISSING DATA**
+- Two-layer architecture: `tracts-outline-line` (outlines) + `tracts-fill` (choropleth)
+- Overlay checkbox controls ONLY outline layer (by design)
+- Fill layer gated by `adminLevel === 'tracts'` (default: `'districts'`)
+- Precomputed crime data files missing: `tract_crime_counts_last12m.json`, `tract_counts_last12m.json`
+- **Impact**: Checking "Show tracts overlay" only shows thin gray outlines, no data choropleth
+
+**Task C — Online Analytics Path**: ✅ **FULLY OPERATIONAL**
+- Click handler wired to `tracts-fill` layer
+- 4 parallel CARTO queries triggered: citywide baseline, tract monthly, tract top-N, tract 7×24
+- All SQL builders implemented: `buildMonthlyTractSQL`, `buildTopTypesTractSQL`, `buildHeatmap7x24TractSQL`
+- All API functions implemented: `fetchMonthlySeriesTract`, `fetchTopTypesTract`, `fetch7x24Tract`
+- Tract geometry helper implemented: `getTractPolygonAndBboxByGEOID` (robust GEOID extraction, coordinate truncation)
+- Data reaches all 3 charts: `renderMonthly`, `renderTopN`, `render7x24`
+- 90-second client-side cache, graceful empty data handling
+- **Impact**: Tract analytics work perfectly when `queryMode = 'tract'` AND `adminLevel = 'tracts'`
+
+### Immediate Actions Recommended (15 minutes)
+
+1. **Fix UX confusion** (2 min):
+   - Rename "Show tracts overlay" → "Show tract boundaries (outlines)"
+   - Add tooltip: "For data choropleth, change Admin Level to 'Tracts'"
+
+2. **Generate precomputed data** (5 min):
+   - Run: `node scripts/precompute_tract_crime.mjs > src/data/tract_crime_counts_last12m.json`
+
+3. **Update README** (5 min):
+   - Document tract visualization usage
+   - Document precomputation script requirement
+
+4. **Update CHANGELOG** (3 min):
+   - ✅ This entry
+
+### Future Enhancements (Optional)
+
+- **Auto-sync admin level** (10 min): When query mode = 'tract', auto-set admin level to 'tracts'
+- **Standalone data map** (3-4 hours): Implement ACS demographic visualization (11 tasks from design doc)
+- **Automated precomputation** (30 min): GitHub Actions workflow to regenerate tract crime counts monthly
+
+### Audit Reports
+- [TRACT_UI_AUDIT_20251023_104527.md](../logs/TRACT_UI_AUDIT_20251023_104527.md) — Task A (Standalone Data Map)
+- [TRACT_LAYER_AUDIT_20251023_105700.md](../logs/TRACT_LAYER_AUDIT_20251023_105700.md) — Task B (Layer Visibility)
+- [TRACT_ONLINE_AGG_TEST_20251023_110033.md](../logs/TRACT_ONLINE_AGG_TEST_20251023_110033.md) — Task C (Analytics Path)
+- [TRACT_COMPREHENSIVE_AUDIT_20251023_110307.md](../logs/TRACT_COMPREHENSIVE_AUDIT_20251023_110307.md) — Executive Summary
+
+### Files Examined (25)
+`src/main.js`, `src/state/store.js`, `src/ui/panel.js`, `src/map/tracts_layers.js`, `src/map/tracts_view.js`, `src/map/render_choropleth_tracts.js`, `src/map/legend.js`, `src/charts/index.js`, `src/api/crime.js`, `src/api/boundaries.js`, `src/utils/sql.js`, `src/utils/tract_geom.js`, `src/utils/classify.js`, `index.html`, and data files.
+
+### Summary
+Tract analytics path is fully functional but visibility UX is confusing. Quick fixes: rename checkbox label + generate precomputed data. Standalone demographic data map remains unimplemented (deferred unless user demand exists).
+
+---
+
 ## 2025-10-21 10:43 — Structure Cleanup: Single Root Entry, Dist Ignored ✅
 
 **Status:** ✅ Repository standardized to Vite best practices
@@ -279,6 +351,9 @@ Restored and hardened tract boundary overlays with three-scenario support:
 2025-10-22 14:48 — fix(drilldown): normalize group keys (snake/lower/pascal) and populate on init; see logs/DRILLDOWN_KEYS_NORMALIZE_*.md
 2025-10-22 15:21 — feat(tract): charts wired (monthly/TopN/7×24); GEOID extraction fixed; see logs/TRACT_WIRING_IMPL_*.md
 2025-10-22 15:21 — feat(choropleth): add classification controls (method/bins/palette/opacity/custom); classifier module; legend integrates; defaults preserved
+2025-10-22 16:28 — feat(tract): online CARTO fetchers for monthly/topN/7×24; wire charts in tract mode; see logs/TRACT_CRIME_E2E_IMPL_*.md
+2025-10-22 16:28 — feat(tract): static last-12-months snapshot for citywide tract crime choropleth (optional fallback); script scripts/precompute_tract_crime.mjs
+2025-10-22 17:05 — fix(ui): clarify tract overlay vs data fill; auto-set adminLevel=tracts on first Tract mode switch; add status HUD in panel; wire snapshot-only fill and legend subtitle; see logs/TRACT_P0_UX_*.md and logs/TRACT_P1A_SNAPSHOT_*.md
 
 ## 2025-10-20 11:07 — Acceptance Test PASS
 

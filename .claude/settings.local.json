@@ -36,7 +36,14 @@
       "Bash(git rm -r --cached dist/)",
       "Bash(git grep:*)",
       "Bash(npm run dev:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(curl:*)",
+      "Bash(if test -f \"src/data/tract_crime_counts_last12m.json\")",
+      "Bash(then ls -lh \"src/data/tract_crime_counts_last12m.json\")",
+      "Bash(else echo \"tract_crime_counts_last12m.json not found\")",
+      "Bash(if test:*)",
+      "Bash(then ls -lh \"src/data/tract_counts_last12m.json\")",
+      "Bash(else echo \"tract_counts_last12m.json not found\")"
     ],
     "deny": [],
     "ask": []

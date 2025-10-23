@@ -34,6 +34,14 @@ export function initPanel(store, handlers) {
   const preset6 = document.getElementById('preset6');
   const preset12 = document.getElementById('preset12');
   const overlayTractsChk = document.getElementById('overlayTractsChk');
+  const overlayLabel = overlayTractsChk ? overlayTractsChk.parentElement?.querySelector('span') : null;
+  // Status HUD container (under header)
+  const headerEl = document.querySelector('#sidepanel > div'); // first header div
+  const hudEl = document.createElement('div');
+  hudEl.id = 'statusHUD';
+  hudEl.style.cssText = 'margin-top:4px; font-size:11px; color:#475569';
+  if (headerEl && headerEl.nextSibling) headerEl.parentElement.insertBefore(hudEl, headerEl.nextSibling);
+  else if (headerEl) headerEl.parentElement.appendChild(hudEl);
   // Choropleth controls
   const classMethodSel = document.getElementById('classMethodSel');
   const classBinsRange = document.getElementById('classBinsRange');
@@ -149,6 +157,7 @@ export function initPanel(store, handlers) {
   overlayTractsChk?.addEventListener('change', () => {
     store.overlayTractsLines = overlayTractsChk.checked;
     handlers.onTractsOverlayToggle?.(store.overlayTractsLines);
+    updateHUD();
   });
 
   // Choropleth controls wiring
@@ -212,9 +221,16 @@ export function initPanel(store, handlers) {
       // clear buffer; clear district selection
       store.center3857 = null; store.centerLonLat = null; store.selectMode = 'idle';
       store.selectedDistrictCode = null;
+      // One-time auto-align admin level to 'tracts'
+      if (!store.didAutoAlignAdmin && store.adminLevel !== 'tracts') {
+        store.adminLevel = 'tracts';
+        if (adminSel) adminSel.value = 'tracts';
+        store.didAutoAlignAdmin = true;
+      }
     }
     applyModeUI();
     onChange();
+    updateHUD();
   });
 
   // Clear selection
@@ -244,6 +260,12 @@ export function initPanel(store, handlers) {
   if (startMonth && store.startMonth) startMonth.value = store.startMonth;
   if (durationSel) durationSel.value = String(store.durationMonths || 6);
   if (overlayTractsChk) overlayTractsChk.checked = store.overlayTractsLines || false;
+  // Clarify overlay label + tooltip
+  if (overlayLabel) {
+    overlayLabel.textContent = 'Show tract boundaries (outlines)';
+    const tip = 'Outlines only. To see tract data (choropleth), set Admin Level = Tracts. Citywide crime fill appears when a last-12-months snapshot is present and the time window matches it.';
+    overlayLabel.title = tip; overlayTractsChk.title = tip;
+  }
   if (classMethodSel) classMethodSel.value = store.classMethod || 'quantile';
   if (classBinsRange) classBinsRange.value = String(store.classBins || 5);
   if (classPaletteSel) classPaletteSel.value = store.classPalette || 'Blues';
@@ -257,6 +279,7 @@ export function initPanel(store, handlers) {
   }
 
   applyModeUI();
+  updateHUD();
 
   // Init-time populate: if groups preselected, populate drilldown immediately
   if (groupSel) {
@@ -270,4 +293,41 @@ export function initPanel(store, handlers) {
   durationSel?.addEventListener('change', () => { store.durationMonths = Number(durationSel.value) || 6; onChange(); });
   preset6?.addEventListener('click', () => { const d = new Date(); const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; store.startMonth = ym; store.durationMonths = 6; onChange(); });
   preset12?.addEventListener('click', () => { const d = new Date(); const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; store.startMonth = ym; store.durationMonths = 12; onChange(); });
+
+  // --- Status HUD helpers ---
+  let __snapshotMeta = null; // cached in-session
+  async function ensureSnapshotMeta() {
+    if (__snapshotMeta !== null) return __snapshotMeta;
+    // Try to fetch local static JSON; ignore failures
+    try {
+      const { fetchJson } = await import('../utils/http.js');
+      const snap = await fetchJson('/src/data/tract_crime_counts_last12m.json', { cacheTTL: 5 * 60_000, retries: 0, timeoutMs: 1500 });
+      if (snap?.meta?.start && snap?.meta?.end) {
+        __snapshotMeta = { start: snap.meta.start, end: snap.meta.end };
+      } else {
+        __snapshotMeta = undefined;
+      }
+    } catch {
+      __snapshotMeta = undefined;
+    }
+    return __snapshotMeta;
+  }
+
+  function windowMatch(meta) {
+    try {
+      const { start, end } = store.getStartEnd();
+      return !!(meta && meta.start === start && meta.end === end);
+    } catch { return false; }
+  }
+
+  async function updateHUD() {
+    if (!hudEl) return;
+    const mode = store.queryMode || 'buffer';
+    const admin = store.adminLevel || 'districts';
+    const charts = (mode === 'tract' && !!store.selectedTractGEOID) ? 'Online' : (mode === 'buffer' ? (store.center3857 ? 'Online' : 'Idle') : 'Online');
+    const meta = await ensureSnapshotMeta();
+    const snapPresent = meta ? 'Present' : 'Absent';
+    const match = meta ? (windowMatch(meta) ? 'Yes' : 'No') : 'No';
+    hudEl.textContent = `Mode: ${mode} | Admin: ${admin} | Charts: ${charts} | Snapshot: ${snapPresent} | Window match: ${match}`;
+  }
 }

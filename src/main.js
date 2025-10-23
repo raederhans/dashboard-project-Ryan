@@ -108,7 +108,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const { start, end, types, drilldownCodes, queryMode, selectedDistrictCode, selectedTractGEOID } = store.getFilters();
     try {
       if (store.adminLevel === 'tracts') {
-        const merged = await getTractsMerged({ per10k: store.per10k });
+        const merged = await getTractsMerged({ per10k: store.per10k, windowStart: start, windowEnd: end });
         renderTractsChoropleth(map, merged); // Legend updated inside
         // maintain tract highlight based on selection
         if (store.queryMode === 'tract' && selectedTractGEOID) {

@@ -44,6 +44,7 @@ export const store = /** @type {Store} */ ({
   selectedDistrictCode: null,
   selectedTractGEOID: null,
   overlayTractsLines: false, // Show tract boundaries overlay in district mode
+  didAutoAlignAdmin: false, // One-time auto-align flag for Tract mode → adminLevel 'tracts'
   // Choropleth classification
   classMethod: 'quantile',
   classBins: 5,

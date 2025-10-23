@@ -3,6 +3,7 @@ import { fetchJson, logQuery } from "../utils/http.js";
 import * as Q from "../utils/sql.js";
 import { expandGroupsToCodes } from "../utils/types.js";
 import { fetchTractsCachedFirst } from "./boundaries.js";
+import { getTractPolygonAndBboxByGEOID } from "../utils/tract_geom.js";
 
 /**
  * Fetch crime point features for Map A.
@@ -258,12 +259,9 @@ export async function fetchAvailableCodesForGroups({ start, end, groups }) {
  */
 export async function fetchMonthlySeriesTract({ start, end, types, tractGEOID }) {
   const tracts = await fetchTractsCachedFirst();
-  const feat = (tracts.features || []).find((f) => {
-    const p = f.properties || {}; const g = p.GEOID || p.GEOID20;
-    return String(g) === String(tractGEOID);
-  });
-  if (!feat) throw new Error(`Tract ${tractGEOID} not found`);
-  const sql = Q.buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry: feat.geometry });
+  const pb = getTractPolygonAndBboxByGEOID(tracts, tractGEOID, { decimals: 6 });
+  if (!pb) throw new Error(`Tract ${tractGEOID} not found`);
+  const sql = Q.buildMonthlyTractSQL({ start, end, types, tractGEOID, tractGeometry: pb.geojsonPolygon4326 });
   await logQuery('fetchMonthlySeriesTract', sql);
   return fetchJson(CARTO_SQL_BASE, {
     method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 90_000,
@@ -282,12 +280,9 @@ export async function fetchMonthlySeriesTract({ start, end, types, tractGEOID })
  */
 export async function fetchTopTypesTract({ start, end, types, tractGEOID, limit = 12 }) {
   const tracts = await fetchTractsCachedFirst();
-  const feat = (tracts.features || []).find((f) => {
-    const p = f.properties || {}; const g = p.GEOID || p.GEOID20;
-    return String(g) === String(tractGEOID);
-  });
-  if (!feat) throw new Error(`Tract ${tractGEOID} not found`);
-  const sql = Q.buildTopTypesTractSQL({ start, end, types, tractGEOID, tractGeometry: feat.geometry, limit });
+  const pb = getTractPolygonAndBboxByGEOID(tracts, tractGEOID, { decimals: 6 });
+  if (!pb) throw new Error(`Tract ${tractGEOID} not found`);
+  const sql = Q.buildTopTypesTractSQL({ start, end, types, tractGEOID, tractGeometry: pb.geojsonPolygon4326, limit });
   await logQuery('fetchTopTypesTract', sql);
   return fetchJson(CARTO_SQL_BASE, {
     method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 90_000,
@@ -306,14 +301,16 @@ export async function fetchTopTypesTract({ start, end, types, tractGEOID, limit 
  */
 export async function fetch7x24Tract({ start, end, types, tractGEOID }) {
   const tracts = await fetchTractsCachedFirst();
-  const feat = (tracts.features || []).find((f) => {
-    const p = f.properties || {}; const g = p.GEOID || p.GEOID20;
-    return String(g) === String(tractGEOID);
-  });
-  if (!feat) throw new Error(`Tract ${tractGEOID} not found`);
-  const sql = Q.buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry: feat.geometry });
+  const pb = getTractPolygonAndBboxByGEOID(tracts, tractGEOID, { decimals: 6 });
+  if (!pb) throw new Error(`Tract ${tractGEOID} not found`);
+  const sql = Q.buildHeatmap7x24TractSQL({ start, end, types, tractGEOID, tractGeometry: pb.geojsonPolygon4326 });
   await logQuery('fetch7x24Tract', sql);
   return fetchJson(CARTO_SQL_BASE, {
     method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: `q=${encodeURIComponent(sql)}`, cacheTTL: 90_000,
   });
+}
+
+// Aliases matching request naming
+export async function fetchMonthlyTract({ start, end, geoid, codes }) {
+  return fetchMonthlySeriesTract({ start, end, types: codes, tractGEOID: geoid });
 }

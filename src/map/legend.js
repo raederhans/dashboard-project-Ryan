@@ -34,7 +34,7 @@ export function initLegend(containerId = 'legend') {
  * Update legend with new title, breaks, and colors
  * @param {{title:string,unit:string,breaks:number[],colors:string[]}} params
  */
-export function updateLegend({ title, unit = '', breaks, colors }) {
+export function updateLegend({ title, unit = '', breaks, colors, subtitle }) {
   if (!legendContainer) {
     initLegend();
   }
@@ -48,7 +48,10 @@ export function updateLegend({ title, unit = '', breaks, colors }) {
   const rows = [];
 
   // Title row
-  rows.push(`<div style="font-weight:600; margin-bottom:6px;">${title || 'Legend'}</div>`);
+  rows.push(`<div style="font-weight:600; margin-bottom:4px;">${title || 'Legend'}</div>`);
+  if (subtitle) {
+    rows.push(`<div style="font-size:11px; color:#6b7280; margin-bottom:6px;">${subtitle}</div>`);
+  }
 
   // First range: 0 to breaks[0]
   rows.push(renderRow(colors[0], `0 - ${breaks[0]}${unit}`));
